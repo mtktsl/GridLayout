@@ -10,9 +10,14 @@
 <br/><strong>&bull; Constant</strong> -> Sets the size of the area to the value that is provided
 <br/><strong>&bull; Expanded</strong> -> Expands the view area to the remaining area propotional to the total defined Expanded cell values.
 
-## Code example:
+# Code examples:
 
-<img src="https://i.hizliresim.com/pbre8uv.jpg" 
-data-canonical-src="https://i.hizliresim.com/pbre8uv.jpg" 
-width="800" height="300" />
+## Image-Title-Body Example:
+<img src="https://i.hizliresim.com/43v4hpk.jpg"
+data-canonical-src="https://i.hizliresim.com/43v4hpk.jpg"
+width="800" height="553" />
 
+## Loop Example: Dama View:
+<img src="https://i.hizliresim.com/leufzyl.jpg"
+data-canonical-src="https://i.hizliresim.com/leufzyl.jpg"
+width="800" height="633" />

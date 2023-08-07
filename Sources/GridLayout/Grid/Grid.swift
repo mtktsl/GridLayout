@@ -1,5 +1,3 @@
-import UIKit
-
 //
 //  Grid.swift
 //  GridPanel
@@ -51,7 +49,7 @@ public class Grid: UIView {
         let grid = Grid()
         grid.gridType = gridType
         grid.setCells(gridLengths: cells)
-        grid.calculateTotalStars()
+        grid.calculateTotalExpanded()
         //To prevent margin related constraint errors
         grid.sizeToFit()
         return grid
@@ -241,7 +239,7 @@ public class Grid: UIView {
         }
     }
     
-    private func calculateTotalStars() {
+    private func calculateTotalExpanded() {
         totalGridStarts = 0
         for cell in cells {
             switch cell.gridLength {

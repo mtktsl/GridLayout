@@ -17,7 +17,7 @@
 data-canonical-src="https://i.hizliresim.com/43v4hpk.jpg"
 width="800" height="553" />
 
-## Loop Example: Dama View:
+## Loop Example: Checkers View:
 <img src="https://i.hizliresim.com/leufzyl.jpg"
 data-canonical-src="https://i.hizliresim.com/leufzyl.jpg"
 width="800" height="633" />

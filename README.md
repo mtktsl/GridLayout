@@ -4,11 +4,11 @@
 
 ## Syntax:
 &bull; Use the cell type structure to put views inside a Grid when initializing it.<br/>
-&bull; The only ways to initialize a Grid is to use either "Grid.vertical" or "Grid.horizontal" methods.<br/>
+&bull; The only way to initialize a Grid is to use either "Grid.vertical" or "Grid.horizontal" methods.<br/>
 &bull; Cell type structure is taking paramaters by using GridBuilder which is an implementation of resultBuilder attribute.<br/>
 &bull; You can use Auto, Constant or Expanded keywords and open code blocks then put your UIViews inside of a Grid.vertical or Grid.horizontal blocks. <br/>
-&bull; Example: Auto { myView }
-&bull; Or you can use the included UIView extension to create cells by using your UIView object. Example: myView.Auto()
+&bull; Example: Auto { myView } <br/>
+&bull; Or you can use the included UIView extension to create cells by using your UIView object. Example: myView.Auto() <br/>
 &bull; Check the examples written in code editor below of this page.
 
 ## Cell Types:

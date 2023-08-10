@@ -13,7 +13,7 @@
 
 ## Cell Types:
 <strong>&bull; Auto</strong> -> Automatically resizes the area that is including views.
-<br/>&bull; Note: If you want your custom UIView class objects to be able to auto resized in the Grid then you must override "sizeThatFits" method and provide a size for your custom UIView class.
+<br/>&bull; Note: If you want your custom UIView class objects to be able to be auto resized in the Grid then you must override "sizeThatFits" method and provide a size for your custom UIView class.
 <br/><strong>&bull; Constant</strong> -> Sets the size of the area to the value that is provided. The value represents Width for the horizontal Grid and Height for the vertical Grid.
 <br/><strong>&bull; Expanded</strong> -> Expands the view area to the remaining area from the Auto and Constant cells, propotional to the total defined Expanded cell values. The default Expanded cell value is 1 when it's not provided.
 
@@ -21,7 +21,15 @@
 _<br/>ViewSize = ViewExpandedValue / TotalExpandedValue_
 <br/>So this means that if you have 2 views that have Expanded cell type and value of the first one is 1 and the value of the second one is 2 then their sizes are going to be proportional to this value:
 <br/>_OwnerGridsSize - (TotalAutoCalculatedSizes + TotalConstantSizes)_
-<br/>And the proportions are going to be 1/3 and 2/3.  
+<br/>And the proportions are going to be 1/3 and 2/3.
+
+## Cell Type Parameters
+<strong>&bull; value</strong> -> (CGSize type) (Not available for Auto cell) Sets the cell height or width depending on the Grid type. <br/>
+<strong>&bull; maxSize</strong> -> (CGSize type) (Only available for Auto cell) Sets the maximum size for the view. <br/>
+<strong>&bull; horizontalAlignment</strong> -> (enum type) Align the view horizontally in it's allocated space. <br/>
+<strong>&bull; verticalAlignment</strong> -> (enum type) Align the view vertically in it's allocated space. <br/>
+<strong>&bull; margin</strong> -> (UIEdgeInset type) Set the margin values for the edges of the view to the edges of the allocated area. <br/>
+<br/>**Note:** If the cell type is _Auto_ then the allocated area expands based on the margin values. 
 
 # Code examples:
 

@@ -83,17 +83,6 @@ public class Grid: UIView {
         
         for cell in cells {
             
-            let oldSize = cell.view.bounds.size
-            cell.view.bounds.size = .zero
-            
-            let isZero = cell.view.sizeThatFits(.zero) == .zero
-            
-            cell.view.bounds.size = oldSize
-            
-            if isZero {
-                continue
-            }
-            
             switch cell.gridLength {
             case .constant(let value, let view, _, _, _):
                 
@@ -159,6 +148,17 @@ public class Grid: UIView {
         margin: UIEdgeInsets,
         fitsSize: CGSize = .zero
     ) -> CGSize {
+        
+        let oldSize = view.bounds.size
+        view.bounds.size = .zero
+        
+        let isZero = view.sizeThatFits(.zero) == .zero
+        
+        view.bounds.size = oldSize
+        
+        if isZero {
+            return .zero
+        }
         
         var edgeWidth = self.bounds.size.width + margin.left + margin.right
         var edgeHeight = self.bounds.size.height + margin.top + margin.bottom

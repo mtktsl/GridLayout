@@ -1,15 +1,30 @@
 # GridLayout
 
-&bull; This is a custom UIView object that is organizing views inside of it horizontally or vertically.
+&bull; This is a custom UIView object that is organizing views inside of it horizontally or vertically.<br/>
+<br/>
+&bull; <strong>Framework:</strong> UIKit <br/>
+&bull; <strong>Minimum iOS Version:</strong> v11
 
 ## Syntax:
 &bull; Use the cell type structure to put views inside a Grid when initializing it.<br/>
 &bull; The only way to initialize a Grid is to use either "Grid.vertical" or "Grid.horizontal" methods.<br/>
 &bull; Cell type structure is taking paramaters by using GridBuilder which is an implementation of resultBuilder attribute.<br/>
-&bull; You can use Auto, Constant or Expanded keywords and open code blocks then put your UIViews inside of a Grid.vertical or Grid.horizontal blocks. <br/>
-&bull; Example: Auto { myView } <br/>
-&bull; Or you can use the included UIView extension to create cells by using your UIView object. Example: myView.Auto() <br/>
-&bull; Check the examples written in code editor below of this page.
+&bull; You can use the included UIView extension to create cells by using your UIView objects. <br/>
+&bull; **Example:** <br/>
+```swift
+Grid.vertical {
+
+    constantSizedUIView
+        .constant(50)
+
+    autoSizedUILabel
+        .auto()
+
+    expandedSizedUIView
+        .expanded()
+}
+```
+&bull; Check the simulated examples written in code editor below of this page.
 
 ## Cell Types:
 <strong>&bull; Auto</strong> -> Automatically resizes the area that is including views.
@@ -23,22 +38,31 @@ _<br/>ViewSize = ViewExpandedValue / TotalExpandedValue_
 <br/>_OwnerGridsSize - (TotalAutoCalculatedSizes + TotalConstantSizes)_
 <br/>And the proportions are going to be 1/3 and 2/3.
 
-## Cell Type Parameters
+## Cell Type Parameters and Parameter Setter Functions
 <strong>&bull; value</strong> -> (CGSize type) (Not available for Auto cell) Sets the cell height or width depending on the Grid type. <br/>
-<strong>&bull; maxSize</strong> -> (CGSize type) (Only available for Auto cell) Sets the maximum size for the view. <br/>
-<strong>&bull; horizontalAlignment</strong> -> (enum type) Align the view horizontally in it's allocated space. <br/>
-<strong>&bull; verticalAlignment</strong> -> (enum type) Align the view vertically in it's allocated space. <br/>
-<strong>&bull; margin</strong> -> (UIEdgeInset type) Set the margin values for the edges of the view to the edges of the allocated area. <br/>
+<strong>&bull; maxSize (setter function)</strong> -> (CGSize type) (Only available for Auto cell) Sets the maximum size for the view. <br/>
+<strong>&bull; horizontalAlignment (setter function)</strong> -> (enum type) Align the view horizontally in it's allocated space. <br/>
+<strong>&bull; verticalAlignment (setter function)</strong> -> (enum type) Align the view vertically in it's allocated space. <br/>
+<strong>&bull; margin (setter function)</strong> -> (UIEdgeInset type) Set the margin values for the edges of the view to the edges of the allocated area. <br/>
 <br/>**Note:** If the cell type is _Auto_ then the allocated area expands based on the margin values. 
-
+<br/>**Example setter function usage:**
+<br/>
+```swift
+myLabel
+    .auto()
+    .horizontalAlignment(.autoRight)
+    .verticalAlignment(.autoTop)
+    .maxSize(75)
+    .margin(UIEdgeInsets(top: 0, left: 0, bottom: 0, right: 10))
+```
 # Code examples:
 
 ## Image-Title-Body Example:
-<img src="https://i.hizliresim.com/43v4hpk.jpg"
-data-canonical-src="https://i.hizliresim.com/43v4hpk.jpg"
-width="800" height="553" />
+<img src="https://i.hizliresim.com/2v3hps2.jpg"
+data-canonical-src="https://i.hizliresim.com/2v3hps2.jpg"
+width="800" height="632" />
 
 ## Loop Example: Checkers View:
-<img src="https://i.hizliresim.com/leufzyl.jpg"
-data-canonical-src="https://i.hizliresim.com/leufzyl.jpg"
-width="800" height="633" />
+<img src="https://i.hizliresim.com/gpvyfbx.jpg"
+data-canonical-src="https://i.hizliresim.com/gpvyfbx.jpg"
+width="800" height="632" />

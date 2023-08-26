@@ -8,40 +8,48 @@
 import UIKit
 
 public extension UIView {
-    func Auto(
-        horizontalAlignment: GridHorizontalAlignment = .fill,
-        verticalAlignment: GridVerticalAlignment = .fill,
-        margin: UIEdgeInsets = .zero
-    ) -> Auto {
+    func auto() -> GridAutoCell {
         return .init(
-            horizontalAlignment: horizontalAlignment,
-            verticalAlignment: verticalAlignment,
-            margin: margin) { self }
+            cell: .init(
+                gridLength: .auto,
+                value: .zero,
+                view: self,
+                horizontalAlignment: .fill,
+                verticalAlignment: .fill,
+                maxLength: .zero,
+                minLength: .zero,
+                margin: .zero
+            )
+        )
     }
     
-    func Constant(
-        value: CGFloat,
-        horizontalAlignment: GridHorizontalAlignment = .fill,
-        verticalAlignment: GridVerticalAlignment = .fill,
-        margin: UIEdgeInsets = .zero
-    ) -> Constant {
+    func constant(_ value: CGFloat) -> GridConstantCell {
         return .init(
-            value: value,
-            horizontalAlignment: horizontalAlignment,
-            verticalAlignment: verticalAlignment,
-            margin: margin) { self }
+            cell: .init(
+                gridLength: .constant,
+                value: value,
+                view: self,
+                horizontalAlignment: .fill,
+                verticalAlignment: .fill,
+                maxLength: .zero,
+                minLength: .zero,
+                margin: .zero
+            )
+        )
     }
     
-    func Expanded(
-        value: CGFloat = 1,
-        horizontalAlignment: GridHorizontalAlignment = .fill,
-        verticalAlignment: GridVerticalAlignment = .fill,
-        margin: UIEdgeInsets = .zero
-    ) -> Expanded {
+    func expanded(_ value: CGFloat = 1) -> GridExpandedCell {
         return .init(
-            value: value,
-            horizontalAlignment: horizontalAlignment,
-            verticalAlignment: verticalAlignment,
-            margin: margin) { self }
+            cell: .init(
+                gridLength: .expanded,
+                value: value,
+                view: self,
+                horizontalAlignment: .fill,
+                verticalAlignment: .fill,
+                maxLength: .zero,
+                minLength: .zero,
+                margin: .zero
+            )
+        )
     }
 }

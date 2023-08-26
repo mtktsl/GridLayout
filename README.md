@@ -60,9 +60,9 @@ myLabel
 ## Image-Title-Body Example:
 <img src="https://i.hizliresim.com/2v3hps2.jpg"
 data-canonical-src="https://i.hizliresim.com/2v3hps2.jpg"
-width="800" height="632" />
+width="800" />
 
 ## Loop Example: Checkers View:
 <img src="https://i.hizliresim.com/gpvyfbx.jpg"
 data-canonical-src="https://i.hizliresim.com/gpvyfbx.jpg"
-width="800" height="632" />
+width="800" />

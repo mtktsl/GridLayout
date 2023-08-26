@@ -10,23 +10,15 @@ import UIKit
 @resultBuilder
 public struct GridBuilder {
     
-    public static func buildBlock(_ components: GridContent...) -> [GridLength] {
-        var result = [GridLength]()
-        for content in components {
-            result.append(contentsOf: content.cells)
-        }
-        return result
+    public static func buildBlock(_ components: GridContent...) -> [GridCell] {
+        return components.map( {$0.cell} )
     }
     
-    public static func buildBlock(_ components: [GridLength]) -> [GridLength] {
-        return components
+    public static func buildBlock(_ components: [GridCell]...) -> [GridCell] {
+        return components.flatMap( { $0 } )
     }
     
-    public static func buildArray(_ components: [[GridLength]]) -> [GridLength] {
-        return components.flatMap({ $0 })
-    }
-    
-    public static func buildBlock(_ components: UIView...) -> [UIView] {
-        return components
+    public static func buildArray(_ components: [[GridCell]]) -> [GridCell] {
+        return components.flatMap( { $0 } )
     }
 }

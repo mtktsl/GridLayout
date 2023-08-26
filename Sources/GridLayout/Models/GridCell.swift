@@ -8,22 +8,39 @@
 import UIKit
 
 public class GridCell {
-    var value: CGFloat
-    let view: UIView
+    
     var constraints = [NSLayoutConstraint]()
-    let gridLength: GridLength
-    let horizontalAlignment: GridHorizontalAlignment
-    let verticalAlignment: GridVerticalAlignment
+    var gridLength: GridLength
+    
+    var value: CGFloat
+    var view: UIView
+    var horizontalAlignment: GridHorizontalAlignment
+    var verticalAlignment: GridVerticalAlignment
+    
+    var maxLength: CGFloat
+    var minLength: CGFloat
+    
     var margin: UIEdgeInsets
     
     var spacing: UIEdgeInsets = .zero
     
-    init(value: CGFloat, view: UIView, gridLength: GridLength, horizontalAlignment: GridHorizontalAlignment, verticalAlignment: GridVerticalAlignment, margin: UIEdgeInsets) {
+    init(
+        gridLength: GridLength,
+        value: CGFloat,
+        view: UIView,
+        horizontalAlignment: GridHorizontalAlignment,
+        verticalAlignment: GridVerticalAlignment,
+        maxLength: CGFloat,
+        minLength: CGFloat,
+        margin: UIEdgeInsets
+    ) {
+        self.gridLength = gridLength
         self.value = value
         self.view = view
-        self.gridLength = gridLength
         self.horizontalAlignment = horizontalAlignment
         self.verticalAlignment = verticalAlignment
+        self.maxLength = maxLength
+        self.minLength = minLength
         self.margin = margin
     }
 }

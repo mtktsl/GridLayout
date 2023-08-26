@@ -37,18 +37,18 @@ public class Grid: UIView {
         fatalError("init(coder:) has not been implemented")
     }
     
-    public static func horizontal(@GridBuilder content: () -> [GridLength]) -> Grid {
+    public static func horizontal(@GridBuilder content: () -> [GridCell]) -> Grid {
         return build(cells: content(), gridType: .horizontal)
     }
     
-    public static func vertical(@GridBuilder content: () -> [GridLength]) -> Grid {
+    public static func vertical(@GridBuilder content: () -> [GridCell]) -> Grid {
         return build(cells: content(), gridType: .vertical)
     }
     
-    private static func build(cells: [GridLength], gridType: GridType) -> Grid {
+    private static func build(cells: [GridCell], gridType: GridType) -> Grid {
         let grid = Grid()
         grid.gridType = gridType
-        grid.setCells(gridLengths: cells)
+        grid.setCells(cells: cells)
         grid.calculateTotalExpanded()
         //To prevent margin related constraint errors
         grid.sizeToFit()
@@ -84,27 +84,27 @@ public class Grid: UIView {
         for cell in cells {
             
             switch cell.gridLength {
-            case .constant(let value, let view, _, _, _):
                 
-                let calculatedWidth = view.sizeThatFits(
+            case .constant:
+                let calculatedWidth = cell.view.sizeThatFits(
                     CGSize(width: 0,
                            height: self.bounds.size.height)).width
-                let calculatedHeight = view.sizeThatFits(
+                let calculatedHeight = cell.view.sizeThatFits(
                     CGSize(width: self.bounds.size.width,
                            height: 0)).height
                 
                 if gridType == .vertical {
-                    totalHeight += value
+                    totalHeight += cell.value
                     totalWidth = max(totalWidth, calculatedWidth)
                 } else {
-                    totalWidth += value
+                    totalWidth += cell.value
                     totalHeight = max(totalHeight, calculatedHeight)
                 }
                 
-            case .expanded(_, let view, _, _, let margin):
-                let size = calculateAutoCellSize(view: view,
+            case .expanded:
+                let size = calculateAutoCellSize(view: cell.view,
                                                  maxSize: 0,
-                                                 margin: margin)
+                                                 margin: cell.margin)
                 
                 if gridType == .vertical {
                     totalWidth = max(totalWidth, size.width)
@@ -114,11 +114,11 @@ public class Grid: UIView {
                     totalWidth += size.width
                 }
                 
-            case .auto(let view, _, _, let maxSize, let margin):
+            case .auto:
                 let sizeResult = calculateAutoCellSize(
-                    view: view,
-                    maxSize: maxSize,
-                    margin: margin,
+                    view: cell.view,
+                    maxSize: cell.maxLength,
+                    margin: cell.margin,
                     fitsSize: size
                 )
                 
@@ -193,49 +193,11 @@ public class Grid: UIView {
         }
     }
     
-    private func setCells(gridLengths: [GridLength]) {
-        for length in gridLengths {
-            switch length {
-            case .constant(let value,
-                           let view,
-                           let horizontalAlignment,
-                           let verticalAlignment,
-                           let margin):
-                cells.append(GridCell(value: value,
-                                      view: view,
-                                      gridLength: length,
-                                      horizontalAlignment: horizontalAlignment,
-                                      verticalAlignment: verticalAlignment,
-                                      margin: margin))
-                view.translatesAutoresizingMaskIntoConstraints = false
-                addSubview(view)
-            case .expanded(let value,
-                       let view,
-                       let horizontalAlignment,
-                       let verticalAlignment,
-                       let margin):
-                cells.append(GridCell(value: value,
-                                      view: view,
-                                      gridLength: length,
-                                      horizontalAlignment: horizontalAlignment,
-                                      verticalAlignment: verticalAlignment,
-                                      margin: margin))
-                view.translatesAutoresizingMaskIntoConstraints = false
-                addSubview(view)
-            case .auto(let view,
-                       let horizontalAlignment,
-                       let verticalAlignment,
-                       _,
-                       let margin):
-                cells.append(GridCell(value: 0,
-                                      view: view,
-                                      gridLength: length,
-                                      horizontalAlignment: horizontalAlignment,
-                                      verticalAlignment: verticalAlignment,
-                                      margin: margin))
-                view.translatesAutoresizingMaskIntoConstraints = false
-                addSubview(view)
-            }
+    private func setCells(cells: [GridCell]) {
+        self.cells = cells
+        for cell in self.cells {
+            cell.view.translatesAutoresizingMaskIntoConstraints = false
+            addSubview(cell.view)
         }
     }
     
@@ -243,8 +205,8 @@ public class Grid: UIView {
         totalGridStarts = 0
         for cell in cells {
             switch cell.gridLength {
-            case .expanded(let value, _, _, _, _):
-                totalGridStarts += value
+            case .expanded:
+                totalGridStarts += cell.value
             default:
                 break
             }
@@ -255,28 +217,27 @@ public class Grid: UIView {
         totalGridConstants = 0
         for cell in cells {
             switch cell.gridLength {
-            case .constant(let value, _, _, _, _):
-                totalGridConstants += value
+            case .constant:
+                totalGridConstants += cell.value
                 
-                //Max pencere boyutunu gecmeyecek sekilde ayarla
-            case .auto(let view, _, _, let maxSize, let margin):
+            case .auto:
                 let calculatedSize = (gridType == .vertical) ?
-                CGSize(width: self.bounds.size.width - (margin.left + margin.right),
+                CGSize(width: self.bounds.size.width - (cell.margin.left + cell.margin.right),
                        height: 0)
                 : CGSize(width: 0,
-                         height: self.bounds.size.height - (margin.top + margin.bottom))
+                         height: self.bounds.size.height - (cell.margin.top + cell.margin.bottom))
                 
-                let sizeThatFits = view.sizeThatFits(calculatedSize)
+                let sizeThatFits = cell.view.sizeThatFits(calculatedSize)
                 
                 let value = (gridType == .vertical) ? sizeThatFits.height
                                                   : sizeThatFits.width
                 
-                cell.value = (maxSize > 0 && maxSize < value) ? maxSize : value
+                cell.value = (cell.maxLength > 0 && cell.maxLength < value) ? cell.maxLength : value
                 
                 totalGridConstants += cell.value
                 totalGridConstants += (gridType == .vertical)
-                ? margin.top + margin.bottom
-                : margin.left + margin.right
+                ? cell.margin.top + cell.margin.bottom
+                : cell.margin.left + cell.margin.right
                 
             default:
                 break
@@ -295,7 +256,7 @@ public class Grid: UIView {
     
     private func setSizeAnchor(cell: GridCell) {
         switch cell.gridLength {
-        case .constant(_, _, _, _, _):
+        case .constant:
             if gridType == .vertical {
                 var height = cell.value - (cell.margin.top + cell.margin.bottom)
                 
@@ -314,7 +275,7 @@ public class Grid: UIView {
                 constraint.isActive = true
             }
             
-        case .expanded(_, _, _, _, _):
+        case .expanded:
             
             if gridType == .vertical {
                 var height = self.bounds.size.height * (cell.value / totalGridStarts) * expandMultiplier
@@ -335,11 +296,11 @@ public class Grid: UIView {
                 cell.constraints.append(constraint)
                 constraint.isActive = true
             }
-        case .auto(_, _, _, let maxSize, _):
+        case .auto:
             if gridType == .vertical {
                 let limit = self.bounds.size.height - cell.margin.top - cell.margin.bottom
                 var height = (cell.value > limit) ? limit : cell.value
-                height = (maxSize > 0 && maxSize < height) ? maxSize : height
+                height = (cell.maxLength > 0 && cell.maxLength < height) ? cell.maxLength : height
                 height = calculateVerticalSpacing(cell: cell, size: height)
                 
                 let constraint = cell.view.heightAnchor.constraint(equalToConstant: height)
@@ -348,7 +309,7 @@ public class Grid: UIView {
             } else {
                 let limit = self.bounds.size.width - cell.margin.right - cell.margin.left
                 var width = (cell.value > limit) ? limit : cell.value
-                width = (maxSize > 0 && maxSize < width) ? maxSize : width
+                width = (cell.maxLength > 0 && cell.maxLength < width) ? cell.maxLength : width
                 width = calculateHorizontalSpacing(cell: cell, size: width)
                 
                 let constraint = cell.view.widthAnchor.constraint(equalToConstant: width)

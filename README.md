@@ -3,7 +3,7 @@
 &bull; This is a custom UIView object that is organizing views inside of it horizontally or vertically.<br/>
 <br/>
 &bull; <strong>Framework:</strong> UIKit <br/>
-&bull; <strong>Minimum iOS Version:</strong> v11
+&bull; <strong>Minimum iOS Version:</strong> v12
 
 ## Syntax:
 &bull; Use the cell type structure to put views inside a Grid when initializing it.<br/>

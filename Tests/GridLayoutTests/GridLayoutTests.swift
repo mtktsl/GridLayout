@@ -7,8 +7,26 @@ final class GridLayoutTests: XCTestCase {
         return Array.init(repeating: "A", count: count).joined(separator: "")
     }
     
+    func testSizeThatFits_singleHorizontalGrid() {
+        
+        let label = UILabel()
+        label.text = "Lorem ipsum dolor sit amet. Lorem ipsun dolor sit amet."
+        
+        let grid = Grid.horizontal {
+            label
+                .auto()
+        }
+        
+        let testSize: CGSize = .zero
+        
+        let labelSize = label.sizeThatFits(testSize)
+        let gridSize = grid.sizeThatFits(testSize)
+        
+        XCTAssertTrue(labelSize == gridSize)
+    }
+    
     //There was a problem that causes grid to calculate sizeThatFits wrong when inner views collapse to a smaller size after the grid laid out at least once.
-    //This test is for guaranteeing that the grid calculates it's sizeThatFits right.
+    //This test is for guaranteeing that the grid calculates it's sizeThatFits correctly.
     func test_sizeThatFits_collapse_back_to_original_size() {
         
         let oneLineTextCount = 50
@@ -27,9 +45,9 @@ final class GridLayoutTests: XCTestCase {
         
         let innerGrid = Grid.horizontal {
             UIView()
-                .Constant(value: 30)
+                .constant(30)
             label
-                .Expanded()
+                .expanded()
         }
         
         let initialSize = innerGrid.sizeThatFits(screenSize)

@@ -9,6 +9,8 @@ import UIKit
 
 public enum GridHorizontalAlignment {
     case fill
+    case constantCenter(width: CGFloat)
+    case autoCenter
     case constantLeft(width: CGFloat)
     case autoLeft
     case constantRight(width: CGFloat)

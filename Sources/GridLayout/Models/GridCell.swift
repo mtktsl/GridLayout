@@ -17,8 +17,22 @@ public class GridCell {
     var horizontalAlignment: GridHorizontalAlignment
     var verticalAlignment: GridVerticalAlignment
     
-    var maxLength: CGFloat
-    var minLength: CGFloat
+    var maxLength: CGFloat {
+        didSet {
+            if maxLength < minLength {
+                print("GridCell: Attempted to set maxLength as less than minLength in GridCell. \nValues are equalized instead.")
+                maxLength = minLength
+            }
+        }
+    }
+    var minLength: CGFloat {
+        didSet {
+            if maxLength < minLength {
+                print("GridCell: Attempted to set minLength as bigger than maxLength in GridCell. \nValues are equalized instead.")
+                minLength = maxLength
+            }
+        }
+    }
     
     var margin: UIEdgeInsets
     

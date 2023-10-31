@@ -7,7 +7,7 @@
 
 import Foundation
 
-public enum GridType {
+public enum GridOrientation {
     case horizontal
     case vertical
 }

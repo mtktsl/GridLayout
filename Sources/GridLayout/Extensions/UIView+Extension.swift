@@ -16,7 +16,7 @@ public extension UIView {
                 view: self,
                 horizontalAlignment: .fill,
                 verticalAlignment: .fill,
-                maxLength: .zero,
+                maxLength: .infinity,
                 minLength: .zero,
                 margin: .zero
             )
@@ -31,7 +31,7 @@ public extension UIView {
                 view: self,
                 horizontalAlignment: .fill,
                 verticalAlignment: .fill,
-                maxLength: .zero,
+                maxLength: .infinity,
                 minLength: .zero,
                 margin: .zero
             )
@@ -46,10 +46,11 @@ public extension UIView {
                 view: self,
                 horizontalAlignment: .fill,
                 verticalAlignment: .fill,
-                maxLength: .zero,
+                maxLength: .infinity,
                 minLength: .zero,
                 margin: .zero
             )
         )
     }
 }
+

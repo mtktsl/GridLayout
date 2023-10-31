@@ -10,7 +10,8 @@ import UIKit
 public class Grid: UIView {
     
     private var totalGridConstants: CGFloat = 0
-    private var totalGridStarts: CGFloat = 0
+    private var totalGridAuto: CGFloat = 0
+    private var totalGridExpanded: CGFloat = 0
     
     private var expandMultiplier: CGFloat {
         let length = (gridType == .vertical)
@@ -25,8 +26,8 @@ public class Grid: UIView {
         return 0
     }
     
-    private var gridType: GridType = .vertical
-    private var cells = [GridCell]()
+    private var gridType: GridOrientation = .vertical
+    private var contents = [GridContentProtocol]()
     
     //We don't want the grid to be initialized as empty from outside of the class
     private init() {
@@ -37,519 +38,779 @@ public class Grid: UIView {
         fatalError("init(coder:) has not been implemented")
     }
     
-    public static func horizontal(@GridBuilder content: () -> [GridCell]) -> Grid {
+    public static func horizontal(@GridBuilder content: () -> [GridContentProtocol]) -> Grid {
         return build(cells: content(), gridType: .horizontal)
     }
     
-    public static func vertical(@GridBuilder content: () -> [GridCell]) -> Grid {
+    public static func vertical(@GridBuilder content: () -> [GridContentProtocol]) -> Grid {
         return build(cells: content(), gridType: .vertical)
     }
     
-    private static func build(cells: [GridCell], gridType: GridType) -> Grid {
+    private static func build(cells: [GridContentProtocol], gridType: GridOrientation) -> Grid {
         let grid = Grid()
+        grid.contents = cells
         grid.gridType = gridType
-        grid.setCells(cells: cells)
-        grid.calculateTotalExpanded()
-        //To prevent margin related constraint errors
+        grid.setupSubviews()
+        grid.calculateTotalConstants()
         grid.sizeToFit()
         return grid
     }
     
+    public static func isViewAutoSizingCompatible(_ view: UIView) -> Bool {
+        let bufferBounds = view.bounds
+        view.bounds = .zero
+        let result = view.sizeThatFits(.zero) != .zero
+        view.bounds = bufferBounds
+        return result
+    }
+    
     override public func layoutSubviews() {
         super.layoutSubviews()
-        updateView()
+        updateLayout()
     }
     
-    func updateView() {        
-        calculateTotalConstants()
-        resetSizeConstraints()
+    public override func sizeThatFits(_ size: CGSize) -> CGSize {
+        calculateTotalAutoSizes()
+        let contentSizingInfos = calculateContentSizings(boundsSize: size)
         
-        for cell in cells {
-            setSizeAnchor(cell: cell)
-        }
-        
-        layoutCellsOrthogonally()
-        
-        layoutCells()
-        layoutFirstCell()
-        
-        updateInnerGrids()
-    }
-    
-    override public func sizeThatFits(_ size: CGSize) -> CGSize {
-        
-        var totalWidth: CGFloat = 0
         var totalHeight: CGFloat = 0
+        var totalWidth: CGFloat = 0
         
-        for cell in cells {
-            
-            switch cell.gridLength {
+        if gridType == .vertical {
+            for i in 0 ..< contentSizingInfos.endIndex {
+                let cellSize = contentSizingInfos[i].0
+                let cell = contents[i].cell
                 
-            case .constant:
-                let calculatedWidth = cell.view.sizeThatFits(
-                    CGSize(width: 0,
-                           height: self.bounds.size.height)).width
-                let calculatedHeight = cell.view.sizeThatFits(
-                    CGSize(width: self.bounds.size.width,
-                           height: 0)).height
-                
-                if gridType == .vertical {
-                    totalHeight += cell.value
-                    totalWidth = max(totalWidth, calculatedWidth)
-                } else {
-                    totalWidth += cell.value
-                    totalHeight = max(totalHeight, calculatedHeight)
-                }
-                
-            case .expanded:
-                let size = calculateAutoCellSize(view: cell.view,
-                                                 maxSize: 0,
-                                                 margin: cell.margin)
-                
-                if gridType == .vertical {
-                    totalWidth = max(totalWidth, size.width)
-                    totalHeight += size.height
-                } else {
-                    totalHeight = max(totalHeight, size.height)
-                    totalWidth += size.width
-                }
-                
-            case .auto:
-                let sizeResult = calculateAutoCellSize(
-                    view: cell.view,
-                    maxSize: cell.maxLength,
-                    margin: cell.margin,
-                    fitsSize: size
+                totalHeight += cellSize.height
+                totalWidth = max(
+                    contents[i].calculateViewWidthForOrthogonalAlignment(
+                        boundsWidth: size.width,
+                        autoSizingAvailability: Grid.isViewAutoSizingCompatible(cell.view)
+                    ) + cell.margin.left + cell.margin.right,
+                    totalWidth
                 )
+            }
+            
+        } else {
+            for i in 0 ..< contentSizingInfos.endIndex {
+                let cellSize = contentSizingInfos[i].0
+                let cell = contents[i].cell
                 
-                if gridType == .vertical {
-                    totalWidth = max(totalWidth, sizeResult.width)
-                    totalHeight += sizeResult.height
-                } else {
-                    totalHeight = max(totalHeight, sizeResult.height)
-                    totalWidth += sizeResult.width
-                }
-                
+                totalWidth += cellSize.width
+                totalHeight = max(
+                    contents[i].calculateViewHeightForOrthogonalAlignment(
+                        boundsHeight: size.height,
+                        autoSizingAvailability: Grid.isViewAutoSizingCompatible(cell.view)
+                    ) + cell.margin.top + cell.margin.bottom,
+                    totalHeight
+                )
             }
         }
         
-        if size.width > size.height {
-            let finalWidth = totalWidth > size.width ? size.width : totalWidth
-            return CGSize(width: finalWidth, height: totalHeight)
-        } else {
-            let finalHeight = totalHeight > size.height ? size.height : totalWidth
-            return CGSize(width: totalWidth, height: finalHeight)
+        return .init(width: totalWidth, height: totalHeight)
+    }
+    
+    private func updateLayout() {
+        deactivateAlignmentConstraints()
+        calculateTotalAutoSizes()
+        
+        let contentSizingInfos = calculateContentSizings(boundsSize: self.bounds.size)
+        
+        calculateViewSpacings(contentSizingInfos: contentSizingInfos)
+        
+        setOrthogonalAlignments(contentSizingInfos: contentSizingInfos)
+        
+        setParallelAlignments(contentSizingInfos: contentSizingInfos)
+    }
+    
+    //TODO: GET THESE VALUES FROM CELLS
+    private func calculateViewSpacings(
+        contentSizingInfos: [ ( cellSize: CGSize, viewSize: CGSize ) ]
+    ) {
+        for i in 0 ..< contents.count {
+            contents[i].setSpacing(cellSize: contentSizingInfos[i].cellSize, viewSize: contentSizingInfos[i].viewSize)
         }
     }
     
-    private func calculateAutoCellSize(
-        view: UIView,
-        maxSize: CGFloat,
-        margin: UIEdgeInsets,
-        fitsSize: CGSize = .zero
-    ) -> CGSize {
+    private func calculateContentSizings(boundsSize: CGSize) -> [ (CGSize, CGSize) ] {
+        var contentInfos = [ ( CGSize, CGSize ) ]()
         
-        let oldSize = view.bounds.size
-        view.bounds.size = .zero
-        
-        let isZero = view.sizeThatFits(.zero) == .zero
-        
-        view.bounds.size = oldSize
-        
-        if isZero {
-            return .zero
-        }
-        
-        var edgeWidth = self.bounds.size.width + margin.left + margin.right
-        var edgeHeight = self.bounds.size.height + margin.top + margin.bottom
-        
-        if maxSize > 0 {
-            if gridType == .vertical && maxSize < edgeHeight {
-                edgeHeight = maxSize
-            } else if gridType == .horizontal && maxSize < edgeWidth{
-                edgeWidth = maxSize
-            }
-        }
-        
-        if fitsSize == .zero {
-            var calculatedWidth = view.sizeThatFits(CGSize(width: 0, height: edgeHeight)).width
-            calculatedWidth += margin.left + margin.right
-            
-            var calculatedHeight = view.sizeThatFits(CGSize(width: edgeWidth, height: 0)).height
-            calculatedHeight += margin.top + margin.bottom
-            
-            return .init(width: calculatedWidth,
-                         height: calculatedHeight)
-        } else {
-            var calculatedSize = view.sizeThatFits(
-                CGSize(
-                    width: fitsSize.width - margin.left - margin.right,
-                    height: fitsSize.height - margin.top - margin.bottom
+        for content in contents {
+            contentInfos.append(
+                content.calculateSizing(
+                    boundsSize: boundsSize,
+                    totalExpanded: totalGridExpanded,
+                    totalConstant: totalGridConstants,
+                    gridType: self.gridType
                 )
             )
-            calculatedSize.width += margin.left + margin.right
-            calculatedSize.height += margin.top + margin.bottom
-            return calculatedSize
+        }
+        
+        return contentInfos
+    }
+    
+    private func deactivateAlignmentConstraints() {
+        for content in contents {
+            content.deactivateAlignmentConstraints()
         }
     }
     
-    private func setCells(cells: [GridCell]) {
-        self.cells = cells
-        for cell in self.cells {
-            cell.view.translatesAutoresizingMaskIntoConstraints = false
-            addSubview(cell.view)
-        }
-    }
-    
-    private func calculateTotalExpanded() {
-        totalGridStarts = 0
-        for cell in cells {
-            switch cell.gridLength {
-            case .expanded:
-                totalGridStarts += cell.value
-            default:
-                break
-            }
+    private func setupSubviews() {
+        for content in contents {
+            content.cell.view.translatesAutoresizingMaskIntoConstraints = false
+            addSubview(content.cell.view)
         }
     }
     
     private func calculateTotalConstants() {
+        
+        totalGridExpanded = 0
         totalGridConstants = 0
-        for cell in cells {
-            switch cell.gridLength {
+        
+        for content in contents {
+            switch content.cell.gridLength {
+            case .expanded:
+                totalGridExpanded += content.cell.value
             case .constant:
-                totalGridConstants += cell.value
-                
-            case .auto:
-                let calculatedSize = (gridType == .vertical) ?
-                CGSize(width: self.bounds.size.width - (cell.margin.left + cell.margin.right),
-                       height: 0)
-                : CGSize(width: 0,
-                         height: self.bounds.size.height - (cell.margin.top + cell.margin.bottom))
-                
-                let sizeThatFits = cell.view.sizeThatFits(calculatedSize)
-                
-                let value = (gridType == .vertical) ? sizeThatFits.height
-                                                  : sizeThatFits.width
-                
-                cell.value = (cell.maxLength > 0 && cell.maxLength < value) ? cell.maxLength : value
-                
-                totalGridConstants += cell.value
-                totalGridConstants += (gridType == .vertical)
-                ? cell.margin.top + cell.margin.bottom
-                : cell.margin.left + cell.margin.right
-                
+                totalGridConstants += content.cell.value
             default:
-                break
+                continue
             }
         }
     }
     
-    private func resetSizeConstraints() {
-        for cell in cells {
-            for constraint in cell.constraints {
-                constraint.isActive = false
-            }
-            cell.constraints.removeAll()
-        }
-    }
-    
-    private func setSizeAnchor(cell: GridCell) {
-        switch cell.gridLength {
-        case .constant:
-            if gridType == .vertical {
-                var height = cell.value - (cell.margin.top + cell.margin.bottom)
-                
-                height = calculateVerticalSpacing(cell: cell, size: height)
-                
-                let constraint = cell.view.heightAnchor.constraint(equalToConstant: height)
-                cell.constraints.append(constraint)
-                constraint.isActive = true
-            } else {
-                var width = cell.value - (cell.margin.left + cell.margin.right)
-                
-                width = calculateHorizontalSpacing(cell: cell, size: width)
-                
-                let constraint = cell.view.widthAnchor.constraint(equalToConstant: width)
-                cell.constraints.append(constraint)
-                constraint.isActive = true
-            }
+    private func calculateTotalAutoSizes() {
+        totalGridConstants -= totalGridAuto
+        totalGridAuto = 0
+        
+        for content in contents {
+            if content.cell.gridLength == .auto {
             
-        case .expanded:
-            
-            if gridType == .vertical {
-                var height = self.bounds.size.height * (cell.value / totalGridStarts) * expandMultiplier
-                height -= (cell.margin.top + cell.margin.bottom)
+                let area = content.calculateSizing(
+                    boundsSize: self.bounds.size,
+                    totalExpanded: totalGridExpanded,
+                    totalConstant: totalGridConstants,
+                    gridType: self.gridType
+                ).cellSize
                 
-                height = calculateVerticalSpacing(cell: cell, size: height)
-                
-                let constraint = cell.view.heightAnchor.constraint(equalToConstant: height)
-                cell.constraints.append(constraint)
-                constraint.isActive = true
-            } else {
-                var width = self.bounds.size.width * (cell.value / totalGridStarts) * expandMultiplier
-                width -= (cell.margin.left + cell.margin.right)
-                
-                width = calculateHorizontalSpacing(cell: cell, size: width)
-                
-                let constraint = cell.view.widthAnchor.constraint(equalToConstant: width)
-                cell.constraints.append(constraint)
-                constraint.isActive = true
-            }
-        case .auto:
-            if gridType == .vertical {
-                let limit = self.bounds.size.height - cell.margin.top - cell.margin.bottom
-                var height = (cell.value > limit) ? limit : cell.value
-                height = (cell.maxLength > 0 && cell.maxLength < height) ? cell.maxLength : height
-                height = calculateVerticalSpacing(cell: cell, size: height)
-                
-                let constraint = cell.view.heightAnchor.constraint(equalToConstant: height)
-                cell.constraints.append(constraint)
-                constraint.isActive = true
-            } else {
-                let limit = self.bounds.size.width - cell.margin.right - cell.margin.left
-                var width = (cell.value > limit) ? limit : cell.value
-                width = (cell.maxLength > 0 && cell.maxLength < width) ? cell.maxLength : width
-                width = calculateHorizontalSpacing(cell: cell, size: width)
-                
-                let constraint = cell.view.widthAnchor.constraint(equalToConstant: width)
-                cell.constraints.append(constraint)
-                constraint.isActive = true
+                totalGridAuto += gridType == .horizontal
+                ? area.width
+                : area.height
             }
         }
+        
+        totalGridConstants += totalGridAuto
     }
     
-    private func layoutCells() {
-        for i in 1 ..< cells.count {
-            layoutArrangedCell(source: cells[i], target: cells[i-1])
+    private func setOrthogonalAlignments(
+        contentSizingInfos: [ ( cellSize: CGSize, viewSize: CGSize ) ]
+    ) {
+        for i in 0 ..< contents.count {
+            setOrthogonalAlignment(
+                for: contents[i],
+                cellSize: contentSizingInfos[i].cellSize,
+                viewSize: contentSizingInfos[i].viewSize
+            )
         }
     }
     
-    private func updateInnerGrids() {
-        for cell in cells {
-            let grid = cell.view as? Grid
-            grid?.updateView()
-        }
-    }
-    
-    private func layoutFirstCell() {
+    private func setOrthogonalAlignment(
+        for content: GridContentProtocol,
+        cellSize: CGSize,
+        viewSize: CGSize
+    ) {
         if gridType == .vertical {
-            let topConstant = cells[0].margin.top + cells[0].spacing.top
-            let constraint = cells[0].view.topAnchor.constraint(equalTo: self.topAnchor, constant: topConstant)
-            cells[0].constraints.append(constraint)
-            constraint.isActive = true
+            setOrthogonalHorizontalAlignment(
+                content: content,
+                cellSize: cellSize,
+                viewSize: viewSize
+            )
         } else {
-            let leftConstant = cells[0].margin.left + cells[0].spacing.left
-            let constraint = cells[0].view.leadingAnchor.constraint(equalTo: self.leadingAnchor, constant: leftConstant)
-            cells[0].constraints.append(constraint)
-            constraint.isActive = true
+            setOrthogonalVerticalAlignment(
+                content: content,
+                cellSize: cellSize,
+                viewSize: viewSize
+            )
         }
     }
     
-    private func layoutCellsOrthogonally() {
-        for i in 0 ..< cells.count {
-            if gridType == .vertical {
-                switch cells[i].horizontalAlignment {
-                case .fill:
-                    let leftConstraint = cells[i].view.leadingAnchor.constraint(equalTo: self.leadingAnchor, constant: cells[i].margin.left)
-                    let rightConstraint = cells[i].view.trailingAnchor.constraint(equalTo: self.trailingAnchor, constant: -cells[i].margin.right)
-                    cells[i].constraints.append(leftConstraint)
-                    cells[i].constraints.append(rightConstraint)
-                    leftConstraint.isActive = true
-                    rightConstraint.isActive = true
-                    
-                case .constantLeft(let width):
-                    let widthConstraint = cells[i].view.widthAnchor.constraint(equalToConstant: width)
-                    let leftConstraint = cells[i].view.leadingAnchor.constraint(equalTo: self.leadingAnchor, constant: cells[i].margin.left)
-                    
-                    cells[i].constraints.append(widthConstraint)
-                    cells[i].constraints.append(leftConstraint)
-                    
-                    widthConstraint.isActive = true
-                    leftConstraint.isActive = true
-                    
-                case .constantRight(let width):
-                    let widthConstraint = cells[i].view.widthAnchor.constraint(equalToConstant: width)
-                    let rightConstraint = cells[i].view.trailingAnchor.constraint(equalTo: self.trailingAnchor, constant: -cells[i].margin.right)
-                    
-                    cells[i].constraints.append(widthConstraint)
-                    cells[i].constraints.append(rightConstraint)
-                    
-                    rightConstraint.isActive = true
-                    widthConstraint.isActive = true
-                
-                case .autoLeft:
-                    let width = cells[i].view.sizeThatFits(CGSize(width: 0, height: cells[i].view.bounds.size.height)).width
-                    
-                    var marginWidth = self.bounds.size.width - cells[i].margin.left - cells[i].margin.right
-                    if marginWidth < 0 {
-                        marginWidth = 0
-                    }
-                    
-                    let widthConstraint = cells[i].view.widthAnchor.constraint(equalToConstant: width > marginWidth ? marginWidth : width)
-                    let leftConstraint = cells[i].view.leadingAnchor.constraint(equalTo: self.leadingAnchor, constant: cells[i].margin.left)
-                    
-                    cells[i].constraints.append(widthConstraint)
-                    cells[i].constraints.append(leftConstraint)
-                    
-                    widthConstraint.isActive = true
-                    leftConstraint.isActive = true
-                    
-                case .autoRight:
-                    
-                    let width = cells[i].view.sizeThatFits(CGSize(width: 0, height: cells[i].view.bounds.size.height)).width
-                    
-                    var marginWidth = self.bounds.size.width - cells[i].margin.left - cells[i].margin.right
-                    if marginWidth < 0 {
-                        marginWidth = 0
-                    }
-                    let widthConstraint = cells[i].view.widthAnchor.constraint(equalToConstant: width > marginWidth ? marginWidth : width)
-                    let rightConstraint = cells[i].view.trailingAnchor.constraint(equalTo: self.trailingAnchor, constant: -cells[i].margin.right)
-                    
-                    cells[i].constraints.append(widthConstraint)
-                    cells[i].constraints.append(rightConstraint)
-                    
-                    rightConstraint.isActive = true
-                    widthConstraint.isActive = true
-                }
-            } else {
-                switch cells[i].verticalAlignment {
-                case .fill:
-                    let topConstraint = cells[i].view.topAnchor.constraint(equalTo: self.topAnchor, constant: cells[i].margin.top)
-                    let bottomConstraint = cells[i].view.bottomAnchor.constraint(equalTo: self.bottomAnchor, constant: -cells[i].margin.bottom)
-                    
-                    cells[i].constraints.append(topConstraint)
-                    cells[i].constraints.append(bottomConstraint)
-                    
-                    topConstraint.isActive = true
-                    bottomConstraint.isActive = true
-                    
-                case .constantTop(let height):
-                    let topConstraint = cells[i].view.topAnchor.constraint(equalTo: self.topAnchor, constant: cells[i].margin.top)
-                    let heightConstraint = cells[i].view.heightAnchor.constraint(equalToConstant: height)
-                    
-                    cells[i].constraints.append(topConstraint)
-                    cells[i].constraints.append(heightConstraint)
-                    
-                    topConstraint.isActive = true
-                    heightConstraint.isActive = true
-                    
-                case .constantBottom(let height):
-                    let bottomConstraint = cells[i].view.bottomAnchor.constraint(equalTo: self.bottomAnchor, constant: -cells[i].margin.bottom)
-                    let heightConstraint = cells[i].view.heightAnchor.constraint(equalToConstant: height)
-                    
-                    cells[i].constraints.append(bottomConstraint)
-                    cells[i].constraints.append(heightConstraint)
-                    
-                    bottomConstraint.isActive = true
-                    heightConstraint.isActive = true
-                    
-                case .autoTop:
-                    let height = cells[i].view.sizeThatFits(CGSize(width: cells[i].view.bounds.size.width, height: 0)).height
-                    let topConstraint = cells[i].view.topAnchor.constraint(equalTo: self.topAnchor, constant: cells[i].margin.top)
-                    
-                    var marginHeight = self.bounds.size.height - cells[i].margin.top - cells[i].margin.bottom
-                    if marginHeight < 0 {
-                        marginHeight = 0
-                    }
-                    
-                    let heightConstraint = cells[i].view.heightAnchor.constraint(equalToConstant: height > marginHeight ? marginHeight : height)
-                    
-                    cells[i].constraints.append(topConstraint)
-                    cells[i].constraints.append(heightConstraint)
-                    
-                    topConstraint.isActive = true
-                    heightConstraint.isActive = true
-                    
-                case .autoBottom:
-                    let height = cells[i].view.sizeThatFits(CGSize(width: cells[i].view.bounds.size.width, height: 0)).height
-
-                    let bottomConstraint = cells[i].view.bottomAnchor.constraint(equalTo: self.bottomAnchor, constant: -cells[i].margin.bottom)
-                    
-                    var marginHeight = self.bounds.size.height - cells[i].margin.top - cells[i].margin.bottom
-                    if marginHeight < 0 {
-                        marginHeight = 0
-                    }
-                    
-                    let heightConstraint = cells[i].view.heightAnchor.constraint(equalToConstant: height > marginHeight ? marginHeight : height)
-                    
-                    cells[i].constraints.append(bottomConstraint)
-                    cells[i].constraints.append(heightConstraint)
-                    
-                    bottomConstraint.isActive = true
-                    heightConstraint.isActive = true
-                }
-            }
-        }
-    }
-    
-    private func layoutArrangedCell(source: GridCell, target: GridCell) {
-        if gridType == .vertical {
+    private func setOrthogonalVerticalAlignment(
+        content: GridContentProtocol,
+        cellSize: CGSize,
+        viewSize: CGSize
+    ) {
+        let alignment = content.cell.verticalAlignment
+        let view = content.cell.view
+        let margin = content.cell.margin
+        
+        switch alignment {
             
+        case .fill:
+            content.setConstraints([
+                view.topAnchor.constraint(
+                    equalTo: self.topAnchor,
+                    constant: margin.top
+                ),
+                view.bottomAnchor.constraint(
+                    equalTo: self.bottomAnchor,
+                    constant: -margin.bottom
+                )
+            ])
             
-            let topConstant = source.margin.top + target.margin.bottom + target.spacing.bottom + source.spacing.top
+        case .constantCenter(height: let height):
+            content.setConstraints([
+                view.centerYAnchor.constraint(
+                    equalTo: self.centerYAnchor,
+                    constant: margin.top - margin.bottom
+                ),
+                view.heightAnchor.constraint(equalToConstant: height)
+            ])
             
-            let constraint = source.view.topAnchor.constraint(equalTo: target.view.bottomAnchor, constant: topConstant)
-            source.constraints.append(constraint)
-            constraint.isActive = true
+        case .autoCenter:
+            content.setConstraints([
+                view.centerYAnchor.constraint(
+                    equalTo: self.centerYAnchor,
+                    constant: margin.top - margin.bottom
+                ),
+                view.heightAnchor.constraint(equalToConstant: viewSize.height)
+            ])
             
-        } else {
+        case .constantTop(height: let height):
+            content.setConstraints([
+                view.topAnchor.constraint(
+                    equalTo: self.topAnchor,
+                    constant: margin.top
+                ),
+                view.heightAnchor.constraint(equalToConstant: height)
+            ])
             
-            let leftConstant = source.margin.left + target.margin.right + target.spacing.right + source.spacing.left
-            
-            let constraint = source.view.leadingAnchor.constraint(equalTo: target.view.trailingAnchor, constant: leftConstant)
-            source.constraints.append(constraint)
-            constraint.isActive = true
-        }
-    }
-    
-    private func calculateVerticalSpacing(cell: GridCell, size: CGFloat) -> CGFloat {
-        switch cell.verticalAlignment {
-        case .constantTop(let h):
-            let diff = (h > size) ? 0 : size - h
-            cell.spacing.bottom = diff
-            return h
-        case .constantBottom(let h):
-            let diff = (h > size) ? 0 : size - h
-            cell.spacing.top = diff
-            return h
         case .autoTop:
-            let fitHeight = cell.view.sizeThatFits(CGSize(width: cell.view.bounds.size.width, height: 0)).height
-            let diff = (fitHeight > size) ? 0 : size - fitHeight
-            cell.spacing.bottom = diff
-            return fitHeight > size ? size : fitHeight
+            content.setConstraints([
+                view.topAnchor.constraint(
+                    equalTo: self.topAnchor,
+                    constant: margin.top
+                ),
+                view.heightAnchor.constraint(equalToConstant: viewSize.height)
+            ])
+            
+        case .constantBottom(height: let height):
+            content.setConstraints([
+                view.bottomAnchor.constraint(
+                    equalTo: self.bottomAnchor,
+                    constant: -margin.bottom
+                ),
+                view.heightAnchor.constraint(equalToConstant: height)
+            ])
+            
         case .autoBottom:
-            let fitHeight = cell.view.sizeThatFits(CGSize(width: cell.view.bounds.size.width, height: 0)).height
-            let diff = (fitHeight > size) ? 0 : size - fitHeight
-            cell.spacing.top = diff
-            return fitHeight > size ? size : fitHeight
-        case .fill:
-            return size < 0 ? 0 : size
+            content.setConstraints([
+                view.bottomAnchor.constraint(
+                    equalTo: self.bottomAnchor,
+                    constant: -margin.bottom
+                ),
+                view.heightAnchor.constraint(equalToConstant: viewSize.height)
+            ])
         }
     }
     
-    private func calculateHorizontalSpacing(cell: GridCell, size: CGFloat) -> CGFloat {
-        switch cell.horizontalAlignment {
-        case .constantLeft(let w):
-            let diff = (w > size) ? 0 : size - w
-            cell.spacing.right = diff
-            return w
-        case .constantRight(let w):
-            let diff = (w > size) ? 0 : size - w
-            cell.spacing.left = diff
-            return w
-        case .autoLeft:
-            let fitWidth = cell.view.sizeThatFits(CGSize(width: 0, height: cell.view.bounds.size.height)).width
-            let diff = (fitWidth > size) ? 0 : size - fitWidth
-            cell.spacing.right = diff
-            return fitWidth > size ? size : fitWidth
-        case .autoRight:
-            let fitWidth = cell.view.sizeThatFits(CGSize(width: 0, height: cell.view.bounds.size.height)).width
-            let diff = (fitWidth > size) ? 0 : size - fitWidth
-            cell.spacing.left = diff
-            return fitWidth > size ? size : fitWidth
+    private func setOrthogonalHorizontalAlignment(
+        content: GridContentProtocol,
+        cellSize: CGSize,
+        viewSize: CGSize
+    ) {
+        let alignment = content.cell.horizontalAlignment
+        let view = content.cell.view
+        let margin = content.cell.margin
+        
+        switch alignment {
+
         case .fill:
-            return size < 0 ? 0 : size
+            content.setConstraints([
+                view.leadingAnchor.constraint(
+                    equalTo: self.leadingAnchor,
+                    constant: margin.left
+                ),
+                
+                view.trailingAnchor.constraint(
+                    equalTo: self.trailingAnchor,
+                    constant: -margin.right
+                )
+            ])
+            
+        case .constantCenter(width: let width):
+            content.setConstraints([
+                view.centerXAnchor.constraint(
+                    equalTo: self.centerXAnchor,
+                    constant: margin.left - margin.right
+                ),
+                view.widthAnchor.constraint(equalToConstant: width)
+            ])
+            
+        case .autoCenter:
+            content.setConstraints([
+                view.centerXAnchor.constraint(
+                    equalTo: self.centerXAnchor,
+                    constant: margin.left - margin.right
+                ),
+                view.widthAnchor.constraint(equalToConstant: viewSize.width)
+            ])
+        case .constantLeft(width: let width):
+            content.setConstraints([
+                view.leadingAnchor.constraint(
+                    equalTo: self.leadingAnchor,
+                    constant: margin.left
+                ),
+                view.widthAnchor.constraint(equalToConstant: width)
+            ])
+        case .autoLeft:
+            content.setConstraints([
+                view.leadingAnchor.constraint(
+                    equalTo: self.leadingAnchor,
+                    constant: margin.left
+                ),
+                view.widthAnchor.constraint(equalToConstant: viewSize.width)
+            ])
+        case .constantRight(width: let width):
+            content.setConstraints([
+                view.trailingAnchor.constraint(
+                    equalTo: self.trailingAnchor,
+                    constant: -margin.right
+                ),
+                view.widthAnchor.constraint(equalToConstant: width)
+            ])
+        case .autoRight:
+            content.setConstraints([
+                view.trailingAnchor.constraint(
+                    equalTo: self.trailingAnchor,
+                    constant: -margin.right
+                ),
+                view.widthAnchor.constraint(equalToConstant: viewSize.width)
+            ])
         }
+    }
+    
+    private func setParallelAlignments(
+        contentSizingInfos: [ ( cellSize: CGSize, viewSize: CGSize ) ]
+    ) {
+        guard let firstContent = contents.first,
+              let firstSizingInfo = contentSizingInfos.first
+        else { return }
+        
+        setInitialParallelAlignment(
+            initialContent: firstContent,
+            cellSize: firstSizingInfo.cellSize,
+            viewSize: firstSizingInfo.viewSize
+        )
+        
+        for i in 1 ..< contents.count {
+            setParallelAlignment(
+                sourceContent: contents[i],
+                targetContent: contents[i-1],
+                cellSize: contentSizingInfos[i].cellSize,
+                viewSize: contentSizingInfos[i].viewSize
+            )
+        }
+    }
+    
+    private func setInitialParallelAlignment(
+        initialContent: GridContentProtocol,
+        cellSize: CGSize,
+        viewSize: CGSize
+    ) {
+        if gridType == .vertical {
+            setInitialParallelVerticalAlignment(
+                initialContent: initialContent,
+                cellHeight: cellSize.height,
+                viewHeight: viewSize.height
+            )
+        } else {
+            setInitialParallelHorizontalAlignment(
+                initialContent: initialContent,
+                cellWidth: cellSize.width,
+                viewWidth: viewSize.width
+            )
+        }
+    }
+    
+    private func setParallelAlignment(
+        sourceContent: GridContentProtocol,
+        targetContent: GridContentProtocol,
+        cellSize: CGSize,
+        viewSize: CGSize
+    ) {
+        if gridType == .vertical {
+            setParallelVerticalAlignment(
+                sourceContent: sourceContent,
+                targetContent: targetContent,
+                cellSize: cellSize,
+                viewSize: viewSize
+            )
+            
+        } else {
+            setParallelHorizontalAlignment(
+                sourceContent: sourceContent,
+                targetContent: targetContent,
+                cellSize: cellSize,
+                viewSize: viewSize
+            )
+        }
+    }
+    
+    private func setInitialParallelVerticalAlignment(
+        initialContent: GridContentProtocol,
+        cellHeight: CGFloat,
+        viewHeight: CGFloat
+    ) {
+        let view = initialContent.cell.view
+        let margin = initialContent.cell.margin
+        
+        switch initialContent.cell.verticalAlignment {
+            
+        case .fill:
+            initialContent.setConstraints([
+                view.topAnchor.constraint(
+                    equalTo: self.topAnchor,
+                    constant: margin.top
+                ),
+                view.heightAnchor.constraint(equalToConstant: viewHeight)
+            ])
+            
+        case .constantCenter(height: let height):
+            initialContent.setConstraints([
+                view.topAnchor.constraint(
+                    equalTo: self.topAnchor,
+                    constant: margin.top
+                    + (cellHeight / 2)
+                    - (height / 2)
+                    - (margin.bottom)
+                ),
+                view.heightAnchor.constraint(equalToConstant: height)
+            ])
+            
+        case .autoCenter:
+            initialContent.setConstraints([
+                view.topAnchor.constraint(
+                    equalTo: self.topAnchor,
+                    constant: margin.top
+                    + (cellHeight / 2)
+                    - (viewHeight / 2)
+                    - (margin.bottom)
+                ),
+                view.heightAnchor.constraint(equalToConstant: viewHeight)
+            ])
+            
+        case .constantTop(height: let height):
+            initialContent.setConstraints([
+                view.topAnchor.constraint(
+                    equalTo: self.topAnchor,
+                    constant: margin.top
+                ),
+                view.heightAnchor.constraint(equalToConstant: height)
+            ])
+            
+        case .autoTop:
+            initialContent.setConstraints([
+                view.topAnchor.constraint(
+                    equalTo: self.topAnchor,
+                    constant: margin.top
+                ),
+                view.heightAnchor.constraint(equalToConstant: viewHeight)
+            ])
+            
+        case .constantBottom(height: let height):
+            initialContent.setConstraints([
+                view.topAnchor.constraint(
+                    equalTo: self.topAnchor,
+                    constant: margin.top
+                    + (cellHeight - height)
+                    - margin.bottom
+                ),
+                view.heightAnchor.constraint(equalToConstant: height)
+            ])
+            
+        case .autoBottom:
+            initialContent.setConstraints([
+                view.topAnchor.constraint(
+                    equalTo: self.topAnchor,
+                    constant: margin.top
+                    + (cellHeight - viewHeight)
+                    - margin.bottom
+                ),
+                view.heightAnchor.constraint(equalToConstant: viewHeight)
+            ])
+        }
+    }
+    
+    private func setParallelVerticalAlignment(
+        sourceContent: GridContentProtocol,
+        targetContent: GridContentProtocol,
+        cellSize: CGSize,
+        viewSize: CGSize
+    ) {
+        let sourceView = sourceContent.cell.view
+        let targetView = targetContent.cell.view
+        
+        let sourceMargin = sourceContent.cell.margin
+        let targetSpacing = targetContent.cell.spacing
+        
+        switch sourceContent.cell.verticalAlignment {
+            
+        case .fill:
+            sourceContent.setConstraints([
+                sourceView.topAnchor.constraint(
+                    equalTo: targetView.bottomAnchor,
+                    constant: sourceMargin.top + targetSpacing.bottom
+                ),
+                sourceView.heightAnchor.constraint(equalToConstant: viewSize.height)
+            ])
+            
+        case .constantCenter(height: let height):
+            sourceContent.setConstraints([
+                sourceView.topAnchor.constraint(
+                    equalTo: targetView.bottomAnchor,
+                    constant: sourceMargin.top
+                    + targetSpacing.bottom
+                    + (cellSize.height / 2)
+                    - (height / 2)
+                    - sourceMargin.bottom
+                ),
+                sourceView.heightAnchor.constraint(equalToConstant: height)
+            ])
+            
+        case .autoCenter:
+            sourceContent.setConstraints([
+                sourceView.topAnchor.constraint(
+                    equalTo: targetView.bottomAnchor,
+                    constant: sourceMargin.top
+                    + targetSpacing.bottom
+                    + (cellSize.height / 2)
+                    - (viewSize.height / 2)
+                    - sourceMargin.bottom
+                ),
+                sourceView.heightAnchor.constraint(equalToConstant: viewSize.height)
+            ])
+            
+        case .constantTop(height: let height):
+            sourceContent.setConstraints([
+                sourceView.topAnchor.constraint(
+                    equalTo: targetView.bottomAnchor,
+                    constant: sourceMargin.top + targetSpacing.bottom
+                ),
+                sourceView.heightAnchor.constraint(equalToConstant: height)
+            ])
+            
+        case .autoTop:
+            sourceContent.setConstraints([
+                sourceView.topAnchor.constraint(
+                    equalTo: targetView.bottomAnchor,
+                    constant: sourceMargin.top + targetSpacing.bottom
+                ),
+                sourceView.heightAnchor.constraint(equalToConstant: viewSize.height)
+            ])
+            
+        case .constantBottom(height: let height):
+            sourceContent.setConstraints([
+                sourceView.topAnchor.constraint(
+                    equalTo: targetView.bottomAnchor,
+                    constant: sourceMargin.top 
+                    + targetSpacing.bottom
+                    + (cellSize.height - height)
+                    - sourceMargin.bottom
+                ),
+                sourceView.heightAnchor.constraint(equalToConstant: height)
+            ])
+            
+        case .autoBottom:
+            sourceContent.setConstraints([
+                sourceView.topAnchor.constraint(
+                    equalTo: targetView.bottomAnchor,
+                    constant: sourceMargin.top
+                    + targetSpacing.bottom
+                    + (cellSize.height - viewSize.height)
+                    - sourceMargin.bottom
+                ),
+                sourceView.heightAnchor.constraint(equalToConstant: viewSize.height)
+            ])
+        }
+    }
+    
+    private func setInitialParallelHorizontalAlignment(
+        initialContent: GridContentProtocol,
+        cellWidth: CGFloat,
+        viewWidth: CGFloat
+    ) {
+        let view = initialContent.cell.view
+        let margin = initialContent.cell.margin
+        
+        switch initialContent.cell.horizontalAlignment {
+            
+        case .fill:
+            initialContent.setConstraints([
+                view.leadingAnchor.constraint(
+                    equalTo: self.leadingAnchor,
+                    constant: margin.left
+                ),
+                view.widthAnchor.constraint(equalToConstant: viewWidth)
+            ])
+            
+        case .constantCenter(width: let width):
+            initialContent.setConstraints([
+                view.leadingAnchor.constraint(
+                    equalTo: self.leadingAnchor,
+                    constant: margin.left
+                    + (cellWidth / 2)
+                    - (width / 2)
+                    - margin.right
+                ),
+                view.widthAnchor.constraint(equalToConstant: width)
+            ])
+            
+        case .autoCenter:
+            initialContent.setConstraints([
+                view.leadingAnchor.constraint(
+                    equalTo: self.leadingAnchor,
+                    constant: margin.left
+                    + (cellWidth / 2)
+                    - (viewWidth / 2)
+                    - margin.right
+                ),
+                view.widthAnchor.constraint(equalToConstant: viewWidth)
+            ])
+            
+        case .constantLeft(width: let width):
+            initialContent.setConstraints([
+                view.leadingAnchor.constraint(
+                    equalTo: self.leadingAnchor,
+                    constant: margin.left
+                ),
+                view.widthAnchor.constraint(equalToConstant: width)
+            ])
+            
+        case .autoLeft:
+            initialContent.setConstraints([
+                view.leadingAnchor.constraint(
+                    equalTo: self.leadingAnchor,
+                    constant: margin.left
+                ),
+                view.widthAnchor.constraint(equalToConstant: viewWidth)
+            ])
+            
+        case .constantRight(width: let width):
+            initialContent.setConstraints([
+                view.leadingAnchor.constraint(
+                    equalTo: self.leadingAnchor,
+                    constant: margin.left
+                    + (cellWidth - width)
+                    - margin.right
+                ),
+                view.widthAnchor.constraint(equalToConstant: width)
+            ])
+            
+        case .autoRight:
+            initialContent.setConstraints([
+                view.leadingAnchor.constraint(
+                    equalTo: self.leadingAnchor,
+                    constant: margin.left
+                    + (cellWidth - viewWidth)
+                    - margin.right
+                ),
+                view.widthAnchor.constraint(equalToConstant: viewWidth)
+            ])
+        }
+    }
+    
+    private func setParallelHorizontalAlignment(
+        sourceContent: GridContentProtocol,
+        targetContent: GridContentProtocol,
+        cellSize: CGSize,
+        viewSize: CGSize
+    ) {
+        let sourceView = sourceContent.cell.view
+        let targetView = targetContent.cell.view
+        
+        let sourceMargin = sourceContent.cell.margin
+        let targetSpacing = targetContent.cell.spacing
+        
+        let alignmentConstraints = switch sourceContent.cell.horizontalAlignment {
+            
+        case .fill:
+            [
+                sourceView.leadingAnchor.constraint(
+                    equalTo: targetView.trailingAnchor,
+                    constant: sourceMargin.left + targetSpacing.right
+                ),
+                sourceView.widthAnchor.constraint(equalToConstant: viewSize.width)
+            ]
+            
+        case .constantCenter(width: let width):
+            [
+                sourceView.leadingAnchor.constraint(
+                    equalTo: targetView.trailingAnchor, 
+                    constant: sourceMargin.left
+                    + targetSpacing.right
+                    + (cellSize.width / 2)
+                    - (width / 2)
+                    - sourceMargin.left
+                ),
+                sourceView.widthAnchor.constraint(equalToConstant: width)
+            ]
+            
+        case .autoCenter:
+            [
+                sourceView.leadingAnchor.constraint(
+                    equalTo: targetView.trailingAnchor,
+                    constant: sourceMargin.left
+                    + targetSpacing.right
+                    + (cellSize.width / 2)
+                    - (viewSize.width / 2)
+                    - sourceMargin.left
+                ),
+                sourceView.widthAnchor.constraint(equalToConstant: viewSize.width)
+            ]
+            
+        case .constantLeft(width: let width):
+            [
+                sourceView.leadingAnchor.constraint(
+                    equalTo: targetView.trailingAnchor,
+                    constant: sourceMargin.left + targetSpacing.right
+                ),
+                sourceView.widthAnchor.constraint(equalToConstant: width)
+            ]
+            
+        case .autoLeft:
+            [
+                sourceView.leadingAnchor.constraint(
+                    equalTo: targetView.trailingAnchor,
+                    constant: sourceMargin.left + targetSpacing.right
+                ),
+                sourceView.widthAnchor.constraint(equalToConstant: viewSize.width)
+            ]
+            
+        case .constantRight(width: let width):
+            [
+                sourceView.leadingAnchor.constraint(
+                    equalTo: targetView.trailingAnchor,
+                    constant: sourceMargin.left
+                    + targetSpacing.right
+                    + (cellSize.width - width)
+                    - sourceMargin.right
+                ),
+                sourceView.widthAnchor.constraint(equalToConstant: width)
+            ]
+            
+        case .autoRight:
+            [
+                sourceView.leadingAnchor.constraint(
+                    equalTo: targetView.trailingAnchor,
+                    constant: sourceMargin.left
+                    + targetSpacing.right
+                    + (cellSize.width - viewSize.width)
+                    - sourceMargin.right
+                ),
+                sourceView.widthAnchor.constraint(equalToConstant: viewSize.width)
+            ]
+        }
+        
+        sourceContent.setConstraints(alignmentConstraints)
     }
 }

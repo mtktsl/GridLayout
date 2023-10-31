@@ -9,6 +9,8 @@ import UIKit
 
 public enum GridVerticalAlignment {
     case fill
+    case constantCenter(height: CGFloat)
+    case autoCenter
     case constantTop(height: CGFloat)
     case autoTop
     case constantBottom(height: CGFloat)

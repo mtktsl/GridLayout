@@ -33,18 +33,21 @@ Grid.vertical {
 <br/><strong>&bull; Expanded</strong> -> Expands the view area to the remaining area from the Auto and Constant cells, propotional to the total defined Expanded cell values. The default Expanded cell value is 1 when it's not provided.
 
 <br/><br/>**Example:** When you have views that have Expanded cell types, then their size proportions are going to be calculated using this formula:
-_<br/>ViewSize = ViewExpandedValue / TotalExpandedValue_
+<br/>**_ViewSize = ViewExpandedValue / TotalExpandedValue_**
 <br/>So this means that if you have 2 views that have Expanded cell type and value of the first one is 1 and the value of the second one is 2 then their sizes are going to be proportional to this value:
-<br/>_OwnerGridsSize - (TotalAutoCalculatedSizes + TotalConstantSizes)_
+<br/>**_OwnerGridsSize - (TotalAutoCalculatedSizes + TotalConstantSizes)_**
 <br/>And the proportions are going to be 1/3 and 2/3.
 
 ## Cell Type Parameters and Parameter Setter Functions
 <strong>&bull; value</strong> -> (CGSize type) (Not available for Auto cell) Sets the cell height or width depending on the Grid type. <br/>
-<strong>&bull; maxSize (setter function)</strong> -> (CGSize type) (Only available for Auto cell) Sets the maximum size for the view. <br/>
+<strong>&bull; maxLength (setter function)</strong> -> (CGSize type) (Only available for Auto cell) Sets the maximum length for the view in the same direction of parent grid orientation. <br/>
+<strong>&bull; minLength (setter function)</strong> -> (CGSize type) (Only available for Auto cell) Sets the minimum length for the view in the same direction of parent grid orientation. <br/>
 <strong>&bull; horizontalAlignment (setter function)</strong> -> (enum type) Align the view horizontally in it's allocated space. <br/>
 <strong>&bull; verticalAlignment (setter function)</strong> -> (enum type) Align the view vertically in it's allocated space. <br/>
 <strong>&bull; margin (setter function)</strong> -> (UIEdgeInset type) Set the margin values for the edges of the view to the edges of the allocated area. <br/>
-<br/>**Note:** If the cell type is _Auto_ then the allocated area expands based on the margin values. 
+<br/>**Note:** If the cell type is _Auto_ then the allocated area expands based on the margin values.
+<br/>As an example, view height is calculated as 100 and margin top is 10 then the allocated area for the view will be 110.
+<br/>
 <br/>**Example setter function usage:**
 <br/>
 ```swift
@@ -52,7 +55,8 @@ myLabel
     .auto()
     .horizontalAlignment(.autoRight)
     .verticalAlignment(.autoTop)
-    .maxSize(75)
+    .maxLength(100)
+    .minLength(50)
     .margin(UIEdgeInsets(top: 0, left: 0, bottom: 0, right: 10))
 ```
 # Code examples:

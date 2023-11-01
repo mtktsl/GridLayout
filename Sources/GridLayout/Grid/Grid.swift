@@ -13,21 +13,13 @@ public class Grid: UIView {
     private var totalGridAuto: CGFloat = 0
     private var totalGridExpanded: CGFloat = 0
     
-    private var expandMultiplier: CGFloat {
-        let length = (gridType == .vertical)
-        ? bounds.size.height
-        : bounds.size.width
-        if length > 0 {
-            if totalGridConstants > 0 {
-                return (length - totalGridConstants) / length
-            }
-            return 1
-        }
-        return 0
-    }
-    
     private var gridType: GridOrientation = .vertical
     private var contents = [GridContentProtocol]()
+    
+    private var lastCalculatedSizeThatFits: CGSize = .zero
+    public override var intrinsicContentSize: CGSize {
+        lastCalculatedSizeThatFits
+    }
     
     //We don't want the grid to be initialized as empty from outside of the class
     private init() {
@@ -68,10 +60,13 @@ public class Grid: UIView {
         super.layoutSubviews()
         updateLayout()
     }
-    
+
     public override func sizeThatFits(_ size: CGSize) -> CGSize {
-        calculateTotalAutoSizes()
-        let contentSizingInfos = calculateContentSizings(boundsSize: size)
+        return calculateSizeFitting(size)
+    }
+    
+    private func calculateSizeFitting(_ targetSize: CGSize) -> CGSize {
+        let contentSizingInfos = calculateContentSizings(boundsSize: targetSize)
         
         var totalHeight: CGFloat = 0
         var totalWidth: CGFloat = 0
@@ -84,7 +79,7 @@ public class Grid: UIView {
                 totalHeight += cellSize.height
                 totalWidth = max(
                     contents[i].calculateViewWidthForOrthogonalAlignment(
-                        boundsWidth: size.width,
+                        boundsWidth: targetSize.width,
                         autoSizingAvailability: Grid.isViewAutoSizingCompatible(cell.view)
                     ) + cell.margin.left + cell.margin.right,
                     totalWidth
@@ -99,7 +94,7 @@ public class Grid: UIView {
                 totalWidth += cellSize.width
                 totalHeight = max(
                     contents[i].calculateViewHeightForOrthogonalAlignment(
-                        boundsHeight: size.height,
+                        boundsHeight: targetSize.height,
                         autoSizingAvailability: Grid.isViewAutoSizingCompatible(cell.view)
                     ) + cell.margin.top + cell.margin.bottom,
                     totalHeight
@@ -121,9 +116,11 @@ public class Grid: UIView {
         setOrthogonalAlignments(contentSizingInfos: contentSizingInfos)
         
         setParallelAlignments(contentSizingInfos: contentSizingInfos)
+        
+        lastCalculatedSizeThatFits = calculateSizeFitting(bounds.size)
+        invalidateIntrinsicContentSize()
     }
     
-    //TODO: GET THESE VALUES FROM CELLS
     private func calculateViewSpacings(
         contentSizingInfos: [ ( cellSize: CGSize, viewSize: CGSize ) ]
     ) {

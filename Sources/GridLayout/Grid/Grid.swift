@@ -65,15 +65,21 @@ public class Grid: UIView {
         return calculateSizeFitting(size)
     }
     
-    private func calculateSizeFitting(_ targetSize: CGSize) -> CGSize {
-        let contentSizingInfos = calculateContentSizings(boundsSize: targetSize)
+    private func calculateSizeFitting(
+        _ targetSize: CGSize,
+        contentSizingInfos: [(cellSize: CGSize, viewSize: CGSize)] = []
+    ) -> CGSize {
+        
+        let finalContentSizingInfos = contentSizingInfos.isEmpty
+        ? calculateContentSizings(boundsSize: targetSize)
+        : contentSizingInfos
         
         var totalHeight: CGFloat = 0
         var totalWidth: CGFloat = 0
         
         if gridType == .vertical {
-            for i in 0 ..< contentSizingInfos.endIndex {
-                let cellSize = contentSizingInfos[i].0
+            for i in 0 ..< finalContentSizingInfos.endIndex {
+                let cellSize = finalContentSizingInfos[i].0
                 let cell = contents[i].cell
                 
                 totalHeight += cellSize.height
@@ -87,8 +93,8 @@ public class Grid: UIView {
             }
             
         } else {
-            for i in 0 ..< contentSizingInfos.endIndex {
-                let cellSize = contentSizingInfos[i].0
+            for i in 0 ..< finalContentSizingInfos.endIndex {
+                let cellSize = finalContentSizingInfos[i].0
                 let cell = contents[i].cell
                 
                 totalWidth += cellSize.width
@@ -117,7 +123,7 @@ public class Grid: UIView {
         
         setParallelAlignments(contentSizingInfos: contentSizingInfos)
         
-        lastCalculatedSizeThatFits = calculateSizeFitting(bounds.size)
+        lastCalculatedSizeThatFits = calculateSizeFitting(bounds.size, contentSizingInfos: contentSizingInfos)
         invalidateIntrinsicContentSize()
     }
     

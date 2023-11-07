@@ -7,19 +7,14 @@
 
 import UIKit
 
+public protocol GridAutoCellProtocol: GridContentProtocol {
+    func maxLength(_ maxLength: CGFloat) -> GridAutoCellProtocol
+    func minLength(_ minLength: CGFloat) -> GridAutoCellProtocol
+}
+
 public class GridAutoCell: GridContentBase {
     
-    public func maxLength(_ maxLength: CGFloat) -> GridAutoCell {
-        cell.maxLength = maxLength
-        return self
-    }
-    
-    public func minLength(_ minLength: CGFloat) -> GridAutoCell {
-        cell.minLength = minLength
-        return self
-    }
-    
-    override public func calculateViewWidthForHorizontalGrid(
+    override func calculateViewWidthForHorizontalGrid(
         boundsSize: CGSize,
         calculatedViewHeight: CGFloat,
         totalExpanded: CGFloat,
@@ -34,7 +29,7 @@ public class GridAutoCell: GridContentBase {
         )
     }
     
-    override public func calculateViewHeightForVerticalGrid(
+    override func calculateViewHeightForVerticalGrid(
         boundsSize: CGSize,
         calculatedViewWidth: CGFloat,
         totalExpanded: CGFloat,
@@ -97,7 +92,7 @@ public class GridAutoCell: GridContentBase {
         }
     }
     
-    override public func finalCellSize(
+    override func finalCellSize(
         viewSize: CGSize,
         boundsSize: CGSize,
         orientation: GridOrientation
@@ -124,5 +119,17 @@ public class GridAutoCell: GridContentBase {
     
     override func calculateVerticalSpacing(cellHeight: CGFloat, viewHeight: CGFloat) {
         cell.spacing.bottom = cell.margin.bottom
+    }
+}
+
+extension GridAutoCell: GridAutoCellProtocol {
+    public func maxLength(_ maxLength: CGFloat) -> any GridAutoCellProtocol {
+        cell.maxLength = maxLength
+        return self
+    }
+    
+    public func minLength(_ minLength: CGFloat) -> any GridAutoCellProtocol {
+        cell.minLength = minLength
+        return self
     }
 }

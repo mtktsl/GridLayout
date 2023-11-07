@@ -10,11 +10,16 @@ import UIKit
 public class Grid: UIView {
     
     private var totalGridConstants: CGFloat = 0
-    private var totalGridAuto: CGFloat = 0
     private var totalGridExpanded: CGFloat = 0
     
-    private var gridType: GridOrientation = .vertical
-    private var contents = [GridContentProtocol]()
+    public var orientation: GridOrientation = .vertical {
+        didSet {
+            if oldValue != orientation {
+                setNeedsLayout()
+            }
+        }
+    }
+    internal var contents = [GridContentBase]()
     
     private var lastCalculatedSizeThatFits: CGSize = .zero
     public override var intrinsicContentSize: CGSize {
@@ -30,18 +35,18 @@ public class Grid: UIView {
         fatalError("init(coder:) has not been implemented")
     }
     
-    public static func horizontal(@GridBuilder content: () -> [GridContentProtocol]) -> Grid {
+    public static func horizontal(@GridBuilder content: () -> [GridContentBase]) -> Grid {
         return build(cells: content(), gridType: .horizontal)
     }
     
-    public static func vertical(@GridBuilder content: () -> [GridContentProtocol]) -> Grid {
+    public static func vertical(@GridBuilder content: () -> [GridContentBase]) -> Grid {
         return build(cells: content(), gridType: .vertical)
     }
     
-    private static func build(cells: [GridContentProtocol], gridType: GridOrientation) -> Grid {
+    private static func build(cells: [GridContentBase], gridType: GridOrientation) -> Grid {
         let grid = Grid()
         grid.contents = cells
-        grid.gridType = gridType
+        grid.orientation = gridType
         grid.setupSubviews()
         grid.calculateTotalConstants()
         grid.sizeToFit()
@@ -65,6 +70,15 @@ public class Grid: UIView {
         return calculateSizeFitting(size)
     }
     
+    public override func systemLayoutSizeFitting(_ targetSize: CGSize) -> CGSize {
+        return calculateSizeFitting(targetSize)
+    }
+    
+    public override func systemLayoutSizeFitting(_ targetSize: CGSize, withHorizontalFittingPriority horizontalFittingPriority: UILayoutPriority, verticalFittingPriority: UILayoutPriority) -> CGSize {
+        return calculateSizeFitting(targetSize)
+    }
+    
+    
     private func calculateSizeFitting(
         _ targetSize: CGSize,
         contentSizingInfos: [(cellSize: CGSize, viewSize: CGSize)] = []
@@ -77,7 +91,7 @@ public class Grid: UIView {
         var totalHeight: CGFloat = 0
         var totalWidth: CGFloat = 0
         
-        if gridType == .vertical {
+        if orientation == .vertical {
             for i in 0 ..< finalContentSizingInfos.endIndex {
                 let cellSize = finalContentSizingInfos[i].0
                 let cell = contents[i].cell
@@ -113,7 +127,7 @@ public class Grid: UIView {
     
     private func updateLayout() {
         deactivateAlignmentConstraints()
-        calculateTotalAutoSizes()
+        calculateTotalConstants()
         
         let contentSizingInfos = calculateContentSizings(boundsSize: self.bounds.size)
         
@@ -123,8 +137,12 @@ public class Grid: UIView {
         
         setParallelAlignments(contentSizingInfos: contentSizingInfos)
         
+        let lastContentSize = lastCalculatedSizeThatFits
         lastCalculatedSizeThatFits = calculateSizeFitting(bounds.size, contentSizingInfos: contentSizingInfos)
-        invalidateIntrinsicContentSize()
+        
+        if lastContentSize != lastCalculatedSizeThatFits {
+            invalidateIntrinsicContentSize()
+        }
     }
     
     private func calculateViewSpacings(
@@ -144,7 +162,7 @@ public class Grid: UIView {
                     boundsSize: boundsSize,
                     totalExpanded: totalGridExpanded,
                     totalConstant: totalGridConstants,
-                    gridType: self.gridType
+                    gridType: self.orientation
                 )
             )
         }
@@ -165,7 +183,7 @@ public class Grid: UIView {
         }
     }
     
-    private func calculateTotalConstants() {
+    internal func calculateTotalConstants() {
         
         totalGridExpanded = 0
         totalGridConstants = 0
@@ -180,29 +198,25 @@ public class Grid: UIView {
                 continue
             }
         }
+        
+        calculateTotalAuto()
     }
     
-    private func calculateTotalAutoSizes() {
-        totalGridConstants -= totalGridAuto
-        totalGridAuto = 0
-        
+    internal func calculateTotalAuto() {
         for content in contents {
             if content.cell.gridLength == .auto {
-            
                 let area = content.calculateSizing(
                     boundsSize: self.bounds.size,
                     totalExpanded: totalGridExpanded,
                     totalConstant: totalGridConstants,
-                    gridType: self.gridType
+                    gridType: self.orientation
                 ).cellSize
                 
-                totalGridAuto += gridType == .horizontal
+                totalGridConstants += orientation == .horizontal
                 ? area.width
                 : area.height
             }
         }
-        
-        totalGridConstants += totalGridAuto
     }
     
     private func setOrthogonalAlignments(
@@ -218,11 +232,11 @@ public class Grid: UIView {
     }
     
     private func setOrthogonalAlignment(
-        for content: GridContentProtocol,
+        for content: GridContentBase,
         cellSize: CGSize,
         viewSize: CGSize
     ) {
-        if gridType == .vertical {
+        if orientation == .vertical {
             setOrthogonalHorizontalAlignment(
                 content: content,
                 cellSize: cellSize,
@@ -238,7 +252,7 @@ public class Grid: UIView {
     }
     
     private func setOrthogonalVerticalAlignment(
-        content: GridContentProtocol,
+        content: GridContentBase,
         cellSize: CGSize,
         viewSize: CGSize
     ) {
@@ -317,7 +331,7 @@ public class Grid: UIView {
     }
     
     private func setOrthogonalHorizontalAlignment(
-        content: GridContentProtocol,
+        content: GridContentBase,
         cellSize: CGSize,
         viewSize: CGSize
     ) {
@@ -416,11 +430,11 @@ public class Grid: UIView {
     }
     
     private func setInitialParallelAlignment(
-        initialContent: GridContentProtocol,
+        initialContent: GridContentBase,
         cellSize: CGSize,
         viewSize: CGSize
     ) {
-        if gridType == .vertical {
+        if orientation == .vertical {
             setInitialParallelVerticalAlignment(
                 initialContent: initialContent,
                 cellHeight: cellSize.height,
@@ -436,12 +450,12 @@ public class Grid: UIView {
     }
     
     private func setParallelAlignment(
-        sourceContent: GridContentProtocol,
-        targetContent: GridContentProtocol,
+        sourceContent: GridContentBase,
+        targetContent: GridContentBase,
         cellSize: CGSize,
         viewSize: CGSize
     ) {
-        if gridType == .vertical {
+        if orientation == .vertical {
             setParallelVerticalAlignment(
                 sourceContent: sourceContent,
                 targetContent: targetContent,
@@ -460,7 +474,7 @@ public class Grid: UIView {
     }
     
     private func setInitialParallelVerticalAlignment(
-        initialContent: GridContentProtocol,
+        initialContent: GridContentBase,
         cellHeight: CGFloat,
         viewHeight: CGFloat
     ) {
@@ -545,8 +559,8 @@ public class Grid: UIView {
     }
     
     private func setParallelVerticalAlignment(
-        sourceContent: GridContentProtocol,
-        targetContent: GridContentProtocol,
+        sourceContent: GridContentBase,
+        targetContent: GridContentBase,
         cellSize: CGSize,
         viewSize: CGSize
     ) {
@@ -638,7 +652,7 @@ public class Grid: UIView {
     }
     
     private func setInitialParallelHorizontalAlignment(
-        initialContent: GridContentProtocol,
+        initialContent: GridContentBase,
         cellWidth: CGFloat,
         viewWidth: CGFloat
     ) {
@@ -723,8 +737,8 @@ public class Grid: UIView {
     }
     
     private func setParallelHorizontalAlignment(
-        sourceContent: GridContentProtocol,
-        targetContent: GridContentProtocol,
+        sourceContent: GridContentBase,
+        targetContent: GridContentBase,
         cellSize: CGSize,
         viewSize: CGSize
     ) {

@@ -10,15 +10,15 @@ import UIKit
 @resultBuilder
 public struct GridBuilder {
     
-    public static func buildBlock(_ components: GridContentProtocol...) -> [GridContentProtocol] {
-        return components
+    public static func buildBlock(_ components: any GridContentProtocol...) -> [GridContentBase] {
+        return components.map( { $0.getInstance() } )
     }
     
-    public static func buildBlock(_ components: [GridContentProtocol]) -> [GridContentProtocol] {
-        return components
+    public static func buildBlock(_ components: [any GridContentProtocol]) -> [GridContentBase] {
+        return components.map( { $0.getInstance() } )
     }
     
-    public static func buildArray(_ components: [[GridContentProtocol]]) -> [GridContentProtocol] {
-        return components.flatMap( { $0 } )
+    public static func buildArray(_ components: [[any GridContentProtocol]]) -> [GridContentBase] {
+        return components.flatMap( { $0 } ).map( { $0.getInstance() } )
     }
 }

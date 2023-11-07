@@ -195,7 +195,7 @@ public class GridContentBase {
         return .zero
     }
     
-    open func finalCellSize(
+    internal func finalCellSize(
         viewSize: CGSize,
         boundsSize: CGSize,
         orientation: GridOrientation
@@ -225,7 +225,10 @@ public class GridContentBase {
             autoSizingAvailability: autoSizingAvailability
         )
         
-        let viewSize = CGSize(width: viewWidth, height: viewHeight)
+        let viewSize = CGSize(
+            width: max(viewWidth, .zero),
+            height: max(viewHeight, .zero)
+        )
         
         let cellSize = finalCellSize(
             viewSize: viewSize,
@@ -258,7 +261,10 @@ public class GridContentBase {
             autoSizingAvailability: autoSizingAvailability
         )
         
-        let viewSize = CGSize(width: viewWidth, height: viewHeight)
+        let viewSize = CGSize(
+            width: max(viewWidth, .zero),
+            height: max(viewHeight, .zero)
+        )
         
         let cellSize = finalCellSize(
             viewSize: viewSize,
@@ -286,11 +292,9 @@ public class GridContentBase {
     ) -> CGFloat {
         return .zero
     }
-}
-
-extension GridContentBase: GridContentProtocol {
-
-    public func calculateSizing(
+    
+    
+    internal func calculateSizing(
         boundsSize: CGSize,
         totalExpanded: CGFloat,
         totalConstant: CGFloat,
@@ -321,7 +325,7 @@ extension GridContentBase: GridContentProtocol {
         }
     }
     
-    public func calculateViewWidthForOrthogonalAlignment(
+    internal func calculateViewWidthForOrthogonalAlignment(
         boundsWidth: CGFloat,
         autoSizingAvailability: Bool
     ) -> CGFloat {
@@ -332,12 +336,14 @@ extension GridContentBase: GridContentProtocol {
         case .fill:
             boundsWidth > 0
             ? boundsWidth - margin.left - margin.right
-            : cell.view.sizeThatFits(.init(
+            : autoSizingAvailability
+            ? cell.view.sizeThatFits(.init(
                 width: .zero,
                 height: estimatedViewHeight(
                     verticalAlignment: cell.verticalAlignment
                 )
             )).width
+            : .zero
         case .constantCenter(width: let width):
             width
         case .constantLeft(width: let width):
@@ -362,7 +368,9 @@ extension GridContentBase: GridContentProtocol {
         }
     }
     
-    public func calculateViewHeightForOrthogonalAlignment(
+    var count = 0
+    
+    internal func calculateViewHeightForOrthogonalAlignment(
         boundsHeight: CGFloat,
         autoSizingAvailability: Bool
     ) -> CGFloat {
@@ -373,12 +381,15 @@ extension GridContentBase: GridContentProtocol {
         case .fill:
             boundsHeight > 0
             ? boundsHeight - margin.top - margin.bottom
-            : cell.view.sizeThatFits(.init(
+            : autoSizingAvailability
+            ? cell.view.sizeThatFits(.init(
                 width: estimatedViewWidth(
                     horizontalAlignment: cell.horizontalAlignment
                 ),
                 height: .zero
             )).height
+            : .zero
+            
         case .constantCenter(height: let height):
             height
         case .constantTop(height: let height):
@@ -402,8 +413,43 @@ extension GridContentBase: GridContentProtocol {
         }
     }
     
-    public func setSpacing(cellSize: CGSize, viewSize: CGSize) {
+    internal func setSpacing(cellSize: CGSize, viewSize: CGSize) {
         calculateVerticalSpacing(cellHeight: cellSize.height, viewHeight: viewSize.height)
         calculateHorizontalSpacing(cellWidth: cellSize.width, viewWidth: viewSize.width)
+    }
+    
+    internal func deactivateAlignmentConstraints() {
+        NSLayoutConstraint.deactivate(cell.constraints)
+    }
+    
+    internal func setConstraints(_ constraints: [NSLayoutConstraint]) {
+        NSLayoutConstraint.activate(constraints)
+        cell.constraints.append(contentsOf: constraints)
+    }
+}
+
+extension GridContentBase: GridContentProtocol {
+    public static func == (lhs: GridContentBase, rhs: GridContentBase) -> Bool {
+        return true
+    }
+    
+    
+    public func horizontalAlignment(_ alignment: GridHorizontalAlignment) -> any GridContentProtocol {
+        cell.horizontalAlignment = alignment
+        return self
+    }
+    
+    public func verticalAlignment(_ alignment: GridVerticalAlignment) -> any GridContentProtocol {
+        cell.verticalAlignment = alignment
+        return self
+    }
+    
+    public func margin(_ margin: UIEdgeInsets) -> any GridContentProtocol {
+        cell.margin = margin
+        return self
+    }
+    
+    public func getInstance() -> GridContentBase {
+        return self
     }
 }

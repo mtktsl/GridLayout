@@ -8,8 +8,8 @@
 import UIKit
 
 public extension UIView {
-    func auto() -> GridAutoCell {
-        return .init(
+    func auto() -> GridAutoCellProtocol {
+        return GridAutoCell(
             cell: .init(
                 gridLength: .auto,
                 value: .zero,
@@ -23,8 +23,8 @@ public extension UIView {
         )
     }
     
-    func constant(_ value: CGFloat) -> GridConstantCell {
-        return .init(
+    func constant(_ value: CGFloat) -> GridContentProtocol {
+        return GridConstantCell(
             cell: .init(
                 gridLength: .constant,
                 value: value,
@@ -38,8 +38,8 @@ public extension UIView {
         )
     }
     
-    func expanded(_ value: CGFloat = 1) -> GridExpandedCell {
-        return .init(
+    func expanded(_ value: CGFloat = 1) -> GridContentProtocol {
+        return GridExpandedCell(
             cell: .init(
                 gridLength: .expanded,
                 value: value,

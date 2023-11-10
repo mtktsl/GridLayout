@@ -83,9 +83,9 @@ extension Grid {
             found.subgrid.contents[found.index] = content
             found.subgrid.calculateTotalConstants()
             setNeedsLayout()
+        } else {
+            fatalError("In Grid.setContentAlignment: Provided view parameter is not a subview of the grid.")
         }
-        
-        fatalError("In Grid.setContentAlignment: Provided view parameter is not a subview of the grid.")
     }
     
     public func addGridContent(at targetIndex: Int = .min, @GridBuilder components: () -> [GridContentBase] ) {

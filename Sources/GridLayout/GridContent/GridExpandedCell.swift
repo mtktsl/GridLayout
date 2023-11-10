@@ -19,20 +19,20 @@ public class GridExpandedCell: GridContentBase {
         let view = cell.view
         let margin = cell.margin
         
-        return switch cell.horizontalAlignment {
+        switch cell.horizontalAlignment {
             
         case .fill:
-            cell.value * expandMultiplierForWidth(sizingInfo: lastSizingInfo)
+            return cell.value * expandMultiplierForWidth(sizingInfo: lastSizingInfo)
             - margin.left
             - margin.right
         case .constantCenter(width: let width):
-            width
+            return width
         case .constantLeft(width: let width):
-            width
+            return width
         case .constantRight(width: let width):
-            width
+            return width
         default:
-            min(
+            return min(
                 view.sizeThatFits(.init(
                     width: .zero,
                     height: calculatedViewHeight
@@ -50,20 +50,20 @@ public class GridExpandedCell: GridContentBase {
     ) -> CGFloat {
         let view = cell.view
         
-        return switch cell.verticalAlignment {
+        switch cell.verticalAlignment {
             
         case .fill:
-            cell.value * expandMultiplierForHeight(sizingInfo: lastSizingInfo)
+            return cell.value * expandMultiplierForHeight(sizingInfo: lastSizingInfo)
             - cell.margin.top
             - cell.margin.bottom
         case .constantCenter(height: let height):
-            height
+            return height
         case .constantTop(height: let height):
-            height
+            return height
         case .constantBottom(height: let height):
-            height
+            return height
         default:
-            min(
+            return min(
                 view.sizeThatFits(.init(
                     width: calculatedViewWidth,
                     height: .zero)
@@ -82,16 +82,16 @@ public class GridExpandedCell: GridContentBase {
     }
     
     override func estimatedViewWidth(horizontalAlignment: GridHorizontalAlignment) -> CGFloat {
-        return switch horizontalAlignment {
+        switch horizontalAlignment {
             
         case .constantCenter(width: let width):
-            width
+            return width
         case .constantLeft(width: let width):
-            width
+            return width
         case .constantRight(width: let width):
-            width
+            return width
         default:
-            cell.value * expandMultiplierForWidth(sizingInfo: lastSizingInfo)
+            return cell.value * expandMultiplierForWidth(sizingInfo: lastSizingInfo)
             - cell.margin.left
             - cell.margin.right
         }
@@ -101,13 +101,13 @@ public class GridExpandedCell: GridContentBase {
         switch verticalAlignment {
             
         case .constantCenter(height: let height):
-            height
+            return height
         case .constantTop(height: let height):
-            height
+            return height
         case .constantBottom(height: let height):
-            height
+            return height
         default:
-            cell.value * expandMultiplierForHeight(sizingInfo: lastSizingInfo)
+            return cell.value * expandMultiplierForHeight(sizingInfo: lastSizingInfo)
             - cell.margin.top
             - cell.margin.bottom
         }
@@ -118,15 +118,15 @@ public class GridExpandedCell: GridContentBase {
         boundsSize: CGSize,
         orientation: GridOrientation
     ) -> CGSize {
-        return switch orientation {
+        switch orientation {
             
         case .horizontal:
-            CGSize(
+            return CGSize(
                 width: cell.value * expandMultiplierForWidth(sizingInfo: lastSizingInfo),
                 height: boundsSize.height
             )
         case .vertical:
-            CGSize(
+            return CGSize(
                 width: boundsSize.width,
                 height: cell.value * expandMultiplierForHeight(sizingInfo: lastSizingInfo)
             )

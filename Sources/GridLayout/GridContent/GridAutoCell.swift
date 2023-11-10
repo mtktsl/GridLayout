@@ -47,48 +47,52 @@ public class GridAutoCell: GridContentBase {
     override func estimatedCellHeight(
         verticalAlignment: GridVerticalAlignment
     ) -> CGFloat {
-        let result: CGFloat = switch verticalAlignment {
+        var result: CGFloat
+        
+        switch verticalAlignment {
             
         case .constantCenter(height: let height):
-            height
+            result = height
         case .constantTop(height: let height):
-            height
+            result = height
         case .constantBottom(height: let height):
-            height
+            result = height
         default:
-            .zero
+            result = .zero
         }
         
-        return if result >= cell.minLength && result <= cell.maxLength {
-            cell.maxLength
+        if result >= cell.minLength && result <= cell.maxLength {
+            return cell.maxLength
         } else if result < cell.minLength {
-            cell.minLength
+            return cell.minLength
         } else {
-            cell.maxLength
+            return cell.maxLength
         }
     }
     
     override func estimatedCellWidth(
         horizontalAlignment: GridHorizontalAlignment
     ) -> CGFloat {
-        let result: CGFloat = switch horizontalAlignment {
+        var result: CGFloat
+        
+        switch horizontalAlignment {
 
         case .constantCenter(width: let width):
-            width
+            result = width
         case .constantLeft(width: let width):
-            width
+            result = width
         case .constantRight(width: let width):
-            width
+            result = width
         default:
-            .zero
+            result = .zero
         }
         
-        return if result >= cell.minLength && result <= cell.maxLength {
-            cell.maxLength
+        if result >= cell.minLength && result <= cell.maxLength {
+            return cell.maxLength
         } else if result < cell.minLength {
-            cell.minLength
+            return cell.minLength
         } else {
-            cell.maxLength
+            return cell.maxLength
         }
     }
     

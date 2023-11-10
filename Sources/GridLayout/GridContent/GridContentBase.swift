@@ -54,36 +54,36 @@ public class GridContentBase {
     ) {
         let margin = cell.margin
         
-        cell.spacing.bottom = switch cell.verticalAlignment {
+        switch cell.verticalAlignment {
             
         case .fill:
-            margin.bottom
+            cell.spacing.bottom = margin.bottom
         
         case .constantCenter(height: let height):
-            ((cellHeight - height) / 2)
+            cell.spacing.bottom = ((cellHeight - height) / 2)
             + margin.bottom
             - margin.top
         
         case .autoCenter:
-            ((cellHeight - viewHeight) / 2)
+            cell.spacing.bottom = ((cellHeight - viewHeight) / 2)
             + margin.bottom
             - margin.top
             
         case .constantTop(height: let height):
-            (cellHeight - height)
+            cell.spacing.bottom = (cellHeight - height)
             + margin.bottom
             - margin.top
             
         case .autoTop:
-            (cellHeight - viewHeight)
+            cell.spacing.bottom = (cellHeight - viewHeight)
             + margin.bottom
             - margin.top
             
         case .constantBottom(_):
-            margin.bottom - margin.top
+            cell.spacing.bottom = margin.bottom - margin.top
             
         case .autoBottom:
-            margin.bottom - margin.top
+            cell.spacing.bottom = margin.bottom - margin.top
         }
     }
     
@@ -93,36 +93,36 @@ public class GridContentBase {
     ) {
         let margin = cell.margin
         
-        cell.spacing.right = switch cell.horizontalAlignment {
+        switch cell.horizontalAlignment {
             
         case .fill:
-            margin.right
+            cell.spacing.right = margin.right
             
         case .constantCenter(width: let width):
-            ((cellWidth - width) / 2)
+            cell.spacing.right = ((cellWidth - width) / 2)
             + margin.right
             - margin.left
             
         case .autoCenter:
-            ((cellWidth - viewWidth) / 2)
+            cell.spacing.right = ((cellWidth - viewWidth) / 2)
             + margin.right
             - margin.left
             
         case .constantLeft(width: let width):
-            (cellWidth - width)
+            cell.spacing.right = (cellWidth - width)
             + margin.right
             - margin.left
             
         case .autoLeft:
-            (cellWidth - viewWidth)
+            cell.spacing.right = (cellWidth - viewWidth)
             + margin.right
             - margin.left
             
         case .constantRight(_):
-            margin.right - margin.left
+            cell.spacing.right = margin.right - margin.left
             
         case .autoRight:
-            margin.right - margin.left
+            cell.spacing.right = margin.right - margin.left
         }
     }
     
@@ -130,18 +130,18 @@ public class GridContentBase {
         calculatedWidth: CGFloat,
         autoSizingAvailability: Bool
     ) -> CGFloat {
-        return switch cell.horizontalAlignment {
+        switch cell.horizontalAlignment {
             
         case .constantCenter(width: let width):
-            width
+            return width
         case .constantLeft(width: let width):
-            width
+            return width
         case .constantRight(width: let width):
-            width
+            return width
         case .fill:
-            calculatedWidth
+            return calculatedWidth
         default:
-            autoSizingAvailability
+            return autoSizingAvailability
             ? calculatedWidth
             : .zero
         }
@@ -151,17 +151,17 @@ public class GridContentBase {
         calculatedHeight: CGFloat,
         autoSizingAvailability: Bool
     ) -> CGFloat {
-        return switch cell.verticalAlignment {
+        switch cell.verticalAlignment {
         case .constantCenter(height: let height):
-            height
+            return height
         case .constantTop(height: let height):
-            height
+            return height
         case .constantBottom(height: let height):
-            height
+            return height
         case .fill:
-            calculatedHeight
+            return calculatedHeight
         default:
-            autoSizingAvailability
+            return autoSizingAvailability
             ? calculatedHeight
             : .zero
         }
@@ -332,9 +332,9 @@ public class GridContentBase {
         
         let margin = cell.margin
         
-        return switch cell.horizontalAlignment {
+        switch cell.horizontalAlignment {
         case .fill:
-            boundsWidth > 0
+            return boundsWidth > 0
             ? boundsWidth - margin.left - margin.right
             : autoSizingAvailability
             ? cell.view.sizeThatFits(.init(
@@ -345,14 +345,14 @@ public class GridContentBase {
             )).width
             : .zero
         case .constantCenter(width: let width):
-            width
+            return width
         case .constantLeft(width: let width):
-            width
+            return width
         case .constantRight(width: let width):
-            width
+            return width
             
         default:
-            autoSizingAvailability
+            return autoSizingAvailability
             ? min(
                 cell.view.sizeThatFits(.init(
                     width: .zero,
@@ -376,10 +376,10 @@ public class GridContentBase {
     ) -> CGFloat {
         let margin = cell.margin
         
-        return switch cell.verticalAlignment {
+        switch cell.verticalAlignment {
             
         case .fill:
-            boundsHeight > 0
+            return boundsHeight > 0
             ? boundsHeight - margin.top - margin.bottom
             : autoSizingAvailability
             ? cell.view.sizeThatFits(.init(
@@ -391,13 +391,13 @@ public class GridContentBase {
             : .zero
             
         case .constantCenter(height: let height):
-            height
+            return height
         case .constantTop(height: let height):
-            height
+            return height
         case .constantBottom(height: let height):
-            height
+            return height
         default:
-            autoSizingAvailability
+            return autoSizingAvailability
             ? min(
                 cell.view.sizeThatFits(.init(
                     width: estimatedViewWidth(

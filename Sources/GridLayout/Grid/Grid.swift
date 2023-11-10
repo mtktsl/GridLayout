@@ -748,10 +748,12 @@ public class Grid: UIView {
         let sourceMargin = sourceContent.cell.margin
         let targetSpacing = targetContent.cell.spacing
         
-        let alignmentConstraints = switch sourceContent.cell.horizontalAlignment {
+        var alignmentConstraints = [NSLayoutConstraint]()
+        
+        switch sourceContent.cell.horizontalAlignment {
             
         case .fill:
-            [
+            alignmentConstraints = [
                 sourceView.leadingAnchor.constraint(
                     equalTo: targetView.trailingAnchor,
                     constant: sourceMargin.left + targetSpacing.right
@@ -760,7 +762,7 @@ public class Grid: UIView {
             ]
             
         case .constantCenter(width: let width):
-            [
+            alignmentConstraints = [
                 sourceView.leadingAnchor.constraint(
                     equalTo: targetView.trailingAnchor, 
                     constant: sourceMargin.left
@@ -773,7 +775,7 @@ public class Grid: UIView {
             ]
             
         case .autoCenter:
-            [
+            alignmentConstraints = [
                 sourceView.leadingAnchor.constraint(
                     equalTo: targetView.trailingAnchor,
                     constant: sourceMargin.left
@@ -786,7 +788,7 @@ public class Grid: UIView {
             ]
             
         case .constantLeft(width: let width):
-            [
+            alignmentConstraints = [
                 sourceView.leadingAnchor.constraint(
                     equalTo: targetView.trailingAnchor,
                     constant: sourceMargin.left + targetSpacing.right
@@ -795,7 +797,7 @@ public class Grid: UIView {
             ]
             
         case .autoLeft:
-            [
+            alignmentConstraints = [
                 sourceView.leadingAnchor.constraint(
                     equalTo: targetView.trailingAnchor,
                     constant: sourceMargin.left + targetSpacing.right
@@ -804,7 +806,7 @@ public class Grid: UIView {
             ]
             
         case .constantRight(width: let width):
-            [
+            alignmentConstraints = [
                 sourceView.leadingAnchor.constraint(
                     equalTo: targetView.trailingAnchor,
                     constant: sourceMargin.left
@@ -816,7 +818,7 @@ public class Grid: UIView {
             ]
             
         case .autoRight:
-            [
+            alignmentConstraints = [
                 sourceView.leadingAnchor.constraint(
                     equalTo: targetView.trailingAnchor,
                     constant: sourceMargin.left

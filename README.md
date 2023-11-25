@@ -62,11 +62,12 @@ myLabel
 # Code examples:
 
 ## Image-Title-Body Example:
-<img src="https://i.hizliresim.com/2v3hps2.jpg"
-data-canonical-src="https://i.hizliresim.com/2v3hps2.jpg"
+<img src="https://github.com/mtktsl/GridLayout/assets/89997840/5b761403-ad13-4fc0-b05d-42ea8461d9b3"
+data-canonical-src="https://github.com/mtktsl/GridLayout/assets/89997840/5b761403-ad13-4fc0-b05d-42ea8461d9b3"
 width="800" />
 
+
 ## Loop Example: Checkers View:
-<img src="https://i.hizliresim.com/gpvyfbx.jpg"
-data-canonical-src="https://i.hizliresim.com/gpvyfbx.jpg"
+<img src="https://github.com/mtktsl/GridLayout/assets/89997840/fd30bf9d-77fd-4731-8f03-eb59b1a6dda5"
+data-canonical-src="https://github.com/mtktsl/GridLayout/assets/89997840/fd30bf9d-77fd-4731-8f03-eb59b1a6dda5"
 width="800" />

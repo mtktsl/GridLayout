@@ -53,10 +53,10 @@ Grid.vertical {
 ```swift
 myLabel
     .auto()
-    .horizontalAlignment(.autoRight)
-    .verticalAlignment(.autoTop)
     .maxLength(100)
     .minLength(50)
+    .horizontalAlignment(.autoRight)
+    .verticalAlignment(.autoTop)
     .margin(UIEdgeInsets(top: 0, left: 0, bottom: 0, right: 10))
 ```
 # Code examples:

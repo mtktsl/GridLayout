@@ -85,7 +85,10 @@ public class Grid: UIView {
     ) -> CGSize {
         
         let finalContentSizingInfos = contentSizingInfos.isEmpty
-        ? calculateContentSizings(boundsSize: targetSize)
+        ? calculateContentSizings(
+            forFitting: true,
+            boundsSize: targetSize
+        )
         : contentSizingInfos
         
         var totalHeight: CGFloat = 0
@@ -153,12 +156,16 @@ public class Grid: UIView {
         }
     }
     
-    private func calculateContentSizings(boundsSize: CGSize) -> [ (CGSize, CGSize) ] {
+    private func calculateContentSizings(
+        forFitting: Bool = false,
+        boundsSize: CGSize
+    ) -> [ (CGSize, CGSize) ] {
         var contentInfos = [ ( CGSize, CGSize ) ]()
         
         for content in contents {
             contentInfos.append(
                 content.calculateSizing(
+                    forFitting: forFitting,
                     boundsSize: boundsSize,
                     totalExpanded: totalGridExpanded,
                     totalConstant: totalGridConstants,

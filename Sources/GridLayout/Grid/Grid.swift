@@ -23,11 +23,11 @@ public class Grid: UIView {
     
     private var lastCalculatedSizeThatFits: CGSize = .zero
     public override var intrinsicContentSize: CGSize {
-        lastCalculatedSizeThatFits
+        return calculateSizeFitting(.zero)
     }
     
     //We don't want the grid to be initialized as empty from outside of the class
-    private init() {
+    public init() {
         super.init(frame: .zero)
     }
     
@@ -139,13 +139,6 @@ public class Grid: UIView {
         setOrthogonalAlignments(contentSizingInfos: contentSizingInfos)
         
         setParallelAlignments(contentSizingInfos: contentSizingInfos)
-        
-        let lastContentSize = lastCalculatedSizeThatFits
-        lastCalculatedSizeThatFits = calculateSizeFitting(bounds.size, contentSizingInfos: contentSizingInfos)
-        
-        if lastContentSize != lastCalculatedSizeThatFits {
-            invalidateIntrinsicContentSize()
-        }
     }
     
     private func calculateViewSpacings(

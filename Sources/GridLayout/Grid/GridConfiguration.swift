@@ -61,7 +61,7 @@ extension Grid {
         else { fatalError("In Grid.swapArrangement: Views provided as parameters has to be subviews of the grid.") }
         
         if first.subgrid === second.subgrid {
-            contents.swapAt(first.index, second.index)
+            first.subgrid.contents.swapAt(first.index, second.index)
         } else {
             swapArrangementBetweenSubgrids(first, second)
         }

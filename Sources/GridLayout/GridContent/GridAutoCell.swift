@@ -15,6 +15,7 @@ public protocol GridAutoCellProtocol: GridContentProtocol {
 public class GridAutoCell: GridContentBase {
     
     override func calculateViewWidthForHorizontalGrid(
+        forFitting: Bool = false,
         boundsSize: CGSize,
         calculatedViewHeight: CGFloat,
         totalExpanded: CGFloat,
@@ -30,6 +31,7 @@ public class GridAutoCell: GridContentBase {
     }
     
     override func calculateViewHeightForVerticalGrid(
+        forFitting: Bool = false,
         boundsSize: CGSize,
         calculatedViewWidth: CGFloat,
         totalExpanded: CGFloat,
@@ -45,6 +47,7 @@ public class GridAutoCell: GridContentBase {
     }
     
     override func estimatedCellHeight(
+        forFitting: Bool = false,
         verticalAlignment: GridVerticalAlignment
     ) -> CGFloat {
         var result: CGFloat
@@ -71,6 +74,7 @@ public class GridAutoCell: GridContentBase {
     }
     
     override func estimatedCellWidth(
+        forFitting: Bool = false,
         horizontalAlignment: GridHorizontalAlignment
     ) -> CGFloat {
         var result: CGFloat
@@ -97,6 +101,7 @@ public class GridAutoCell: GridContentBase {
     }
     
     override func finalCellSize(
+        forFitting: Bool = false,
         viewSize: CGSize,
         boundsSize: CGSize,
         orientation: GridOrientation

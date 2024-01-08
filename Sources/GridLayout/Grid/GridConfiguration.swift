@@ -65,8 +65,7 @@ extension Grid {
         } else {
             swapArrangementBetweenSubgrids(first, second)
         }
-        
-        setNeedsLayout()
+        setNeedsGridLayout()
     }
     
     public func setContentAlignment(
@@ -82,7 +81,7 @@ extension Grid {
             found.subgrid.contents[found.index].deactivateAlignmentConstraints()
             found.subgrid.contents[found.index] = content
             found.subgrid.calculateTotalConstants()
-            setNeedsLayout()
+            setNeedsGridLayout()
         } else {
             fatalError("In Grid.setContentAlignment: Provided view parameter is not a subview of the grid.")
         }
@@ -101,15 +100,14 @@ extension Grid {
             content.cell.view.translatesAutoresizingMaskIntoConstraints = false
             addSubview(content.cell.view)
         }
-        
-        setNeedsLayout()
+        setNeedsGridLayout()
     }
     
     fileprivate func removeSubcontent(subviewToBeRemoved: UIView, at index: Int) {
         let removedContent = contents.remove(at: index)
         removedContent.deactivateAlignmentConstraints()
         subviewToBeRemoved.removeFromSuperview()
-        setNeedsLayout()
+        setNeedsGridLayout()
     }
     
     public func removeSubcontent(subviewToBeRemoved: UIView) {

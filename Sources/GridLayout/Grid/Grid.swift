@@ -21,12 +21,20 @@ public class Grid: UIView {
     }
     internal var contents = [GridContentBase]()
     
-    private var lastCalculatedSizeThatFits: CGSize = .zero
+    internal var newContentSizingFlag = true
+    
+    private var boundsCache: CGSize = .zero
+    private var intrinsicContentSizeCache: CGSize = .zero
+    
+    
     public override var intrinsicContentSize: CGSize {
-        return calculateSizeFitting(.zero)
+        var result = CGSize.zero
+        Self.performWithoutAnimation {
+            result = calculateSizeFitting(.zero)
+        }
+        return result
     }
     
-    //We don't want the grid to be initialized as empty from outside of the class
     public init() {
         super.init(frame: .zero)
     }
@@ -61,35 +69,62 @@ public class Grid: UIView {
         return result
     }
     
+    public func setNeedsGridLayout() {
+        newContentSizingFlag = true
+        setNeedsLayout()
+    }
+    
+    public func sizeThatGridFits(_ targetSize: CGSize) -> CGSize {
+        return calculateSizeFitting(targetSize, useCache: false)
+    }
+    
     override public func layoutSubviews() {
         super.layoutSubviews()
-        updateLayout()
+        Self.performWithoutAnimation {
+            updateLayout()
+        }
     }
 
     public override func sizeThatFits(_ size: CGSize) -> CGSize {
-        return calculateSizeFitting(size)
+        var result = CGSize.zero
+        Self.performWithoutAnimation {
+            result = calculateSizeFitting(size)
+        }
+        return result
     }
     
     public override func systemLayoutSizeFitting(_ targetSize: CGSize) -> CGSize {
-        return calculateSizeFitting(targetSize)
+        var result = CGSize.zero
+        Self.performWithoutAnimation {
+            result = calculateSizeFitting(targetSize)
+        }
+        return result
     }
     
     public override func systemLayoutSizeFitting(_ targetSize: CGSize, withHorizontalFittingPriority horizontalFittingPriority: UILayoutPriority, verticalFittingPriority: UILayoutPriority) -> CGSize {
-        return calculateSizeFitting(targetSize)
+        var result = CGSize.zero
+        Self.performWithoutAnimation {
+            result = calculateSizeFitting(targetSize)
+        }
+        return result
     }
     
     
     private func calculateSizeFitting(
         _ targetSize: CGSize,
-        contentSizingInfos: [(cellSize: CGSize, viewSize: CGSize)] = []
+        useCache: Bool = true
     ) -> CGSize {
         
-        let finalContentSizingInfos = contentSizingInfos.isEmpty
-        ? calculateContentSizings(
-            forFitting: true,
-            boundsSize: targetSize
-        )
-        : contentSizingInfos
+        let finalContentSizingInfos: [(cellSize: CGSize, viewSize: CGSize)]
+        
+        if !useCache || newContentSizingFlag || boundsCache != self.bounds.size {
+            finalContentSizingInfos = calculateContentSizings(
+                forFitting: true,
+                boundsSize: self.bounds.size
+            )
+        } else {
+            return intrinsicContentSizeCache
+        }
         
         var totalHeight: CGFloat = 0
         var totalWidth: CGFloat = 0
@@ -125,10 +160,21 @@ public class Grid: UIView {
             }
         }
         
-        return .init(width: totalWidth, height: totalHeight)
+        let calculatedSize = CGSize(width: totalWidth, height: totalHeight)
+        
+        if useCache {
+            intrinsicContentSizeCache = calculatedSize
+        }
+        
+        return calculatedSize
     }
     
     private func updateLayout() {
+        
+        if boundsCache == bounds.size && !newContentSizingFlag {
+            return
+        }
+        
         deactivateAlignmentConstraints()
         calculateTotalConstants()
         
@@ -139,6 +185,9 @@ public class Grid: UIView {
         setOrthogonalAlignments(contentSizingInfos: contentSizingInfos)
         
         setParallelAlignments(contentSizingInfos: contentSizingInfos)
+        
+        boundsCache = self.bounds.size
+        newContentSizingFlag = false
     }
     
     private func calculateViewSpacings(

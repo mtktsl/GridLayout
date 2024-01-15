@@ -22,13 +22,7 @@ public class Grid: UIView {
     
     internal var contents = [GridContentBase]()
     
-    internal var needsGridLayout = true {
-        didSet {
-            if needsGridLayout {
-                fittingSizeCache.clearCache()
-            }
-        }
-    }
+    internal var needsGridLayout = true
     
     private var boundsCache: CGSize = .zero
     private var intrinsicContentSizeCache: CGSize = .zero
@@ -75,7 +69,17 @@ public class Grid: UIView {
     
     public func setNeedsGridLayout() {
         needsGridLayout = true
+        fittingSizeCache.clearCache()
+        setSubgridsNeedsLayout()
         setNeedsLayout()
+    }
+    
+    private func setSubgridsNeedsLayout() {
+        for content in contents {
+            if let subgrid = content.cell.view as? Grid {
+                subgrid.setNeedsGridLayout()
+            }
+        }
     }
     
     override public func layoutSubviews() {
@@ -176,7 +180,10 @@ public class Grid: UIView {
         deactivateAlignmentConstraints()
         calculateTotalConstants()
         
-        let contentSizingInfos = calculateContentSizings(boundsSize: self.bounds.size)
+        let contentSizingInfos = calculateContentSizings(
+            forFitting: true,
+            boundsSize: self.bounds.size
+        )
         
         calculateViewSpacings(contentSizingInfos: contentSizingInfos)
         

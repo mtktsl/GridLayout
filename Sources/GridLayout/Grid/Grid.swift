@@ -15,24 +15,28 @@ public class Grid: UIView {
     public var orientation: GridOrientation = .vertical {
         didSet {
             if oldValue != orientation {
-                setNeedsLayout()
+                setNeedsGridLayout()
             }
         }
     }
+    
     internal var contents = [GridContentBase]()
     
-    internal var newContentSizingFlag = true
+    internal var needsGridLayout = true {
+        didSet {
+            if needsGridLayout {
+                fittingSizeCache.clearCache()
+            }
+        }
+    }
     
     private var boundsCache: CGSize = .zero
     private var intrinsicContentSizeCache: CGSize = .zero
     
+    private var fittingSizeCache: SizeCacheProtocol = SizeCache(capacity: 10)
     
     public override var intrinsicContentSize: CGSize {
-        var result = CGSize.zero
-        Self.performWithoutAnimation {
-            result = calculateSizeFitting(.zero)
-        }
-        return result
+        return intrinsicContentSizeCache
     }
     
     public init() {
@@ -70,12 +74,8 @@ public class Grid: UIView {
     }
     
     public func setNeedsGridLayout() {
-        newContentSizingFlag = true
+        needsGridLayout = true
         setNeedsLayout()
-    }
-    
-    public func sizeThatGridFits(_ targetSize: CGSize) -> CGSize {
-        return calculateSizeFitting(targetSize, useCache: false)
     }
     
     override public func layoutSubviews() {
@@ -111,20 +111,17 @@ public class Grid: UIView {
     
     
     private func calculateSizeFitting(
-        _ targetSize: CGSize,
-        useCache: Bool = true
+        _ targetSize: CGSize
     ) -> CGSize {
         
-        let finalContentSizingInfos: [(cellSize: CGSize, viewSize: CGSize)]
-        
-        if !useCache || newContentSizingFlag || boundsCache != self.bounds.size {
-            finalContentSizingInfos = calculateContentSizings(
-                forFitting: true,
-                boundsSize: self.bounds.size
-            )
-        } else {
-            return intrinsicContentSizeCache
+        if let result = fittingSizeCache.getResult(for: targetSize) {
+            return result
         }
+        
+        let finalContentSizingInfos = calculateContentSizings(
+            forFitting: true,
+            boundsSize: targetSize
+        )
         
         var totalHeight: CGFloat = 0
         var totalWidth: CGFloat = 0
@@ -162,16 +159,17 @@ public class Grid: UIView {
         
         let calculatedSize = CGSize(width: totalWidth, height: totalHeight)
         
-        if useCache {
-            intrinsicContentSizeCache = calculatedSize
-        }
+        fittingSizeCache.performCaching(
+            targetSize: targetSize,
+            result: calculatedSize
+        )
         
         return calculatedSize
     }
     
     private func updateLayout() {
         
-        if boundsCache == bounds.size && !newContentSizingFlag {
+        if boundsCache == bounds.size && !needsGridLayout {
             return
         }
         
@@ -186,8 +184,16 @@ public class Grid: UIView {
         
         setParallelAlignments(contentSizingInfos: contentSizingInfos)
         
+        if orientation == .vertical && (needsGridLayout || boundsCache.width != bounds.width || needsGridLayout) {
+            calculateIntrinsicContentSize(contentSizingInfos)
+            invalidateIntrinsicContentSize()
+        } else if orientation == .horizontal && (needsGridLayout || boundsCache.height != bounds.height) {
+            calculateIntrinsicContentSize(contentSizingInfos)
+            invalidateIntrinsicContentSize()
+        }
+        
         boundsCache = self.bounds.size
-        newContentSizingFlag = false
+        needsGridLayout = false
     }
     
     private func calculateViewSpacings(
@@ -217,6 +223,26 @@ public class Grid: UIView {
         }
         
         return contentInfos
+    }
+    
+    private func calculateIntrinsicContentSize(
+        _ contentSizingInfos: [(cellSize: CGSize, viewSize: CGSize)]
+    ) {
+        var finalWidth = CGFloat.zero
+        var finalHeight = CGFloat.zero
+        
+        for info in contentSizingInfos {
+            if orientation == .vertical {
+                finalWidth = max(finalWidth, info.cellSize.width)
+                finalHeight += info.cellSize.height
+            } else {
+                finalHeight = max(finalHeight, info.cellSize.height)
+                finalWidth += info.cellSize.width
+            }
+        }
+        
+        intrinsicContentSizeCache.width = finalWidth
+        intrinsicContentSizeCache.height = finalHeight
     }
     
     private func deactivateAlignmentConstraints() {

@@ -60,11 +60,17 @@ public class Grid: UIView {
     }
     
     public static func isViewAutoSizingCompatible(_ view: UIView) -> Bool {
-        let bufferBounds = view.bounds
-        view.bounds = .zero
-        let result = view.sizeThatFits(.zero) != .zero
-        view.bounds = bufferBounds
-        return result
+        let sizeMethodOfView = class_getInstanceMethod(
+            type(of: view),
+            #selector(UIView.sizeThatFits(_:))
+        )
+        
+        let sizeMethod = class_getInstanceMethod(
+            UIView.self,
+            #selector(UIView.sizeThatFits(_:))
+        )
+        
+        return sizeMethodOfView != sizeMethod
     }
     
     public func setNeedsGridLayout() {
@@ -123,7 +129,6 @@ public class Grid: UIView {
         }
         
         let finalContentSizingInfos = calculateContentSizings(
-            forFitting: true,
             boundsSize: targetSize
         )
         
@@ -181,7 +186,6 @@ public class Grid: UIView {
         calculateTotalConstants()
         
         let contentSizingInfos = calculateContentSizings(
-            forFitting: true,
             boundsSize: self.bounds.size
         )
         
@@ -191,7 +195,7 @@ public class Grid: UIView {
         
         setParallelAlignments(contentSizingInfos: contentSizingInfos)
         
-        if orientation == .vertical && (needsGridLayout || boundsCache.width != bounds.width || needsGridLayout) {
+        if orientation == .vertical && (needsGridLayout || boundsCache.width != bounds.width) {
             calculateIntrinsicContentSize(contentSizingInfos)
             invalidateIntrinsicContentSize()
         } else if orientation == .horizontal && (needsGridLayout || boundsCache.height != bounds.height) {
@@ -212,7 +216,6 @@ public class Grid: UIView {
     }
     
     private func calculateContentSizings(
-        forFitting: Bool = false,
         boundsSize: CGSize
     ) -> [ (CGSize, CGSize) ] {
         var contentInfos = [ ( CGSize, CGSize ) ]()
@@ -220,7 +223,6 @@ public class Grid: UIView {
         for content in contents {
             contentInfos.append(
                 content.calculateSizing(
-                    forFitting: forFitting,
                     boundsSize: boundsSize,
                     totalExpanded: totalGridExpanded,
                     totalConstant: totalGridConstants,

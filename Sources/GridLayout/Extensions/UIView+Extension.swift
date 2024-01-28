@@ -38,7 +38,7 @@ public extension UIView {
         )
     }
     
-    func expanded(_ value: CGFloat = 1) -> GridContentProtocol {
+    func expanded(_ value: CGFloat = 1) -> GridExpandedCellProtocol {
         return GridExpandedCell(
             cell: .init(
                 gridLength: .expanded,

@@ -168,11 +168,9 @@ public class GridContentBase {
     }
     
     internal func estimatedViewWidth(
-        forFitting: Bool = false,
         horizontalAlignment: GridHorizontalAlignment
     ) -> CGFloat {
         return estimatedCellWidth(
-            forFitting: forFitting,
             horizontalAlignment: horizontalAlignment
         )
         - cell.margin.left
@@ -180,11 +178,9 @@ public class GridContentBase {
     }
     
     internal func estimatedViewHeight(
-        forFitting: Bool = false,
         verticalAlignment: GridVerticalAlignment
     ) -> CGFloat {
         return estimatedCellHeight(
-            forFitting: forFitting,
             verticalAlignment: verticalAlignment
         )
         - cell.margin.top
@@ -192,21 +188,18 @@ public class GridContentBase {
     }
     
     internal func estimatedCellWidth(
-        forFitting: Bool = false,
         horizontalAlignment: GridHorizontalAlignment
     ) -> CGFloat {
         return .zero
     }
     
     internal func estimatedCellHeight(
-        forFitting: Bool = false,
         verticalAlignment: GridVerticalAlignment
     ) -> CGFloat {
         return .zero
     }
     
     internal func finalCellSize(
-        forFitting: Bool = false,
         viewSize: CGSize,
         boundsSize: CGSize,
         orientation: GridOrientation
@@ -215,7 +208,6 @@ public class GridContentBase {
     }
     
     internal func calculateSizingForVerticalGrid(
-        forFitting: Bool = false,
         boundsSize: CGSize,
         totalExpanded: CGFloat,
         totalConstant: CGFloat,
@@ -223,14 +215,12 @@ public class GridContentBase {
     ) -> (cellSize: CGSize, viewSize: CGSize) {
         
         let viewWidth = calculateViewWidthForOrthogonalAlignment(
-            forFitting: forFitting,
             boundsWidth: boundsSize.width,
             autoSizingAvailability: autoSizingAvailability
         )
         
         let viewHeight = calculateViewHeightForParallelAlignment(
             calculatedHeight: calculateViewHeightForVerticalGrid(
-                forFitting: forFitting,
                 boundsSize: boundsSize,
                 calculatedViewWidth: viewWidth,
                 totalExpanded: totalExpanded,
@@ -245,7 +235,6 @@ public class GridContentBase {
         )
         
         let cellSize = finalCellSize(
-            forFitting: forFitting,
             viewSize: viewSize,
             boundsSize: boundsSize,
             orientation: .vertical
@@ -255,7 +244,6 @@ public class GridContentBase {
     }
     
     internal func calculateSizingForHorizontalGrid(
-        forFitting: Bool = false,
         boundsSize: CGSize,
         totalExpanded: CGFloat,
         totalConstant: CGFloat,
@@ -263,14 +251,12 @@ public class GridContentBase {
     ) -> (cellSize: CGSize, viewSize: CGSize) {
         
         let viewHeight = calculateViewHeightForOrthogonalAlignment(
-            forFitting: forFitting,
             boundsHeight: boundsSize.height,
             autoSizingAvailability: autoSizingAvailability
         )
         
         let viewWidth = calculateViewWidthForParallelAlignment(
             calculatedWidth: calculateViewWidthForHorizontalGrid(
-                forFitting: forFitting,
                 boundsSize: boundsSize,
                 calculatedViewHeight: viewHeight,
                 totalExpanded: totalExpanded,
@@ -285,7 +271,6 @@ public class GridContentBase {
         )
         
         let cellSize = finalCellSize(
-            forFitting: forFitting,
             viewSize: viewSize,
             boundsSize: boundsSize,
             orientation: .horizontal
@@ -295,7 +280,6 @@ public class GridContentBase {
     }
     
     internal func calculateViewWidthForHorizontalGrid(
-        forFitting: Bool = false,
         boundsSize: CGSize,
         calculatedViewHeight: CGFloat,
         totalExpanded: CGFloat,
@@ -305,7 +289,6 @@ public class GridContentBase {
     }
     
     internal func calculateViewHeightForVerticalGrid(
-        forFitting: Bool = false,
         boundsSize: CGSize,
         calculatedViewWidth: CGFloat,
         totalExpanded: CGFloat,
@@ -316,7 +299,6 @@ public class GridContentBase {
     
     
     internal func calculateSizing(
-        forFitting: Bool = false,
         boundsSize: CGSize,
         totalExpanded: CGFloat,
         totalConstant: CGFloat,
@@ -332,7 +314,6 @@ public class GridContentBase {
         
         if gridType == .vertical {
             return calculateSizingForVerticalGrid(
-                forFitting: forFitting,
                 boundsSize: boundsSize,
                 totalExpanded: totalExpanded,
                 totalConstant: totalConstant,
@@ -340,7 +321,6 @@ public class GridContentBase {
             )
         } else {
             return calculateSizingForHorizontalGrid(
-                forFitting: forFitting,
                 boundsSize: boundsSize,
                 totalExpanded: totalExpanded,
                 totalConstant: totalConstant,
@@ -350,7 +330,6 @@ public class GridContentBase {
     }
     
     internal func calculateViewWidthForOrthogonalAlignment(
-        forFitting: Bool = false,
         boundsWidth: CGFloat,
         autoSizingAvailability: Bool
     ) -> CGFloat {
@@ -365,7 +344,6 @@ public class GridContentBase {
             ? cell.view.sizeThatFits(.init(
                 width: .zero,
                 height: estimatedViewHeight(
-                    forFitting: forFitting,
                     verticalAlignment: cell.verticalAlignment
                 )
             )).width
@@ -383,7 +361,6 @@ public class GridContentBase {
                 cell.view.sizeThatFits(.init(
                     width: .zero,
                     height: estimatedViewHeight(
-                        forFitting: forFitting,
                         verticalAlignment: cell.verticalAlignment
                     )
                 )).width,
@@ -398,7 +375,6 @@ public class GridContentBase {
     var count = 0
     
     internal func calculateViewHeightForOrthogonalAlignment(
-        forFitting: Bool = false,
         boundsHeight: CGFloat,
         autoSizingAvailability: Bool
     ) -> CGFloat {
@@ -412,7 +388,6 @@ public class GridContentBase {
             : autoSizingAvailability
             ? cell.view.sizeThatFits(.init(
                 width: estimatedViewWidth(
-                    forFitting: forFitting,
                     horizontalAlignment: cell.horizontalAlignment
                 ),
                 height: .zero
@@ -430,7 +405,6 @@ public class GridContentBase {
             ? min(
                 cell.view.sizeThatFits(.init(
                     width: estimatedViewWidth(
-                        forFitting: forFitting,
                         horizontalAlignment: cell.horizontalAlignment
                     ),
                     height: .zero

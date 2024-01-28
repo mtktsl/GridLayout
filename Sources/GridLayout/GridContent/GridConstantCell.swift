@@ -10,7 +10,6 @@ import UIKit
 public class GridConstantCell: GridContentBase {
     
     override func calculateViewWidthForHorizontalGrid(
-        forFitting: Bool = false,
         boundsSize: CGSize,
         calculatedViewHeight: CGFloat,
         totalExpanded: CGFloat,
@@ -42,7 +41,6 @@ public class GridConstantCell: GridContentBase {
     }
     
     override func calculateViewHeightForVerticalGrid(
-        forFitting: Bool = false,
         boundsSize: CGSize,
         calculatedViewWidth: CGFloat,
         totalExpanded: CGFloat,
@@ -72,21 +70,18 @@ public class GridConstantCell: GridContentBase {
     }
     
     override func estimatedCellWidth(
-        forFitting: Bool = false,
         horizontalAlignment: GridHorizontalAlignment
     ) -> CGFloat {
         return cell.value
     }
     
     override func estimatedCellHeight(
-        forFitting: Bool = false,
         verticalAlignment: GridVerticalAlignment
     ) -> CGFloat {
         return cell.value
     }
     
     override func estimatedViewWidth(
-        forFitting: Bool = false,
         horizontalAlignment: GridHorizontalAlignment
     ) -> CGFloat {
         switch horizontalAlignment {
@@ -103,7 +98,6 @@ public class GridConstantCell: GridContentBase {
     }
     
     override func estimatedViewHeight(
-        forFitting: Bool = false,
         verticalAlignment: GridVerticalAlignment
     ) -> CGFloat {
         switch verticalAlignment {
@@ -120,7 +114,6 @@ public class GridConstantCell: GridContentBase {
     }
     
     override func finalCellSize(
-        forFitting: Bool = false,
         viewSize: CGSize,
         boundsSize: CGSize,
         orientation: GridOrientation

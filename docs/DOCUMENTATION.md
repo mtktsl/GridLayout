@@ -212,7 +212,7 @@ let myGrid = Grid.vertical {
 ### setNeedsGridLayout
 Call this method when one or more views needs to be laid out based on their new content sizes. For example when UILabel is laid out by using `Auto grid cell` and it's `text` value changes, parent Grid's `setNeedsGridLayout` method should be called.
 
-Calling `setNeedsLayout` instead of `setNeedsGridLayout` will not have the same effect. Since `Grid` class is using a caching mechanism in order to improve performance and the way for marking the grid for recalculating its content size and alignment is calling `setNeedsGridLayout` instead of `setNeedsLayout`.
+Calling `setNeedsLayout` instead of `setNeedsGridLayout` will not have the same effect. Since `Grid` class is using a caching mechanism in order to improve performance, the right way for marking the grid for recalculating its content size and alignment is calling `setNeedsGridLayout` instead of `setNeedsLayout`.
 
 ### swapArrangement(of:with:)
 ```swift
